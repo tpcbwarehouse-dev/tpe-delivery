@@ -484,15 +484,125 @@ textarea{resize:vertical;min-height:68px;}
 }
 
 @media print {
-  body { background:#fff !important; }
+  body { background:#fff !important; margin:0; }
   .app-header,.panel:not(#panelPrint),.modal-overlay,.modal-toolbar { display:none !important; }
   #panelPrint { display:block !important; padding:0 !important; }
-  .doc-page { width:100%; margin:0; box-shadow:none; border-radius:0; }
-  .doc-header,.doc-gold-rule,.doc-id-stripe,.doc-footer,.doc-spec-title,.cell-label,.cell-tag {
-    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+
+  /* ซ่อน screen-only elements */
+  .doc-header, .doc-footer { display:none; }
+
+  /* Header ทุกหน้า */
+  .print-header {
+    display:block !important;
+    position:running(pageHeader);
   }
-  @page { size:A4; margin:0; }
+  /* Footer ทุกหน้า */
+  .print-footer {
+    display:block !important;
+    position:running(pageFooter);
+  }
+
+  @page {
+    size: A4;
+    margin: 34mm 14mm 24mm 14mm;
+    @top-center { content: element(pageHeader); }
+    @bottom-center { content: element(pageFooter); }
+  }
+
+  .doc-page { width:100%; box-shadow:none; border-radius:0; }
+  .doc-header,.doc-gold-rule,.doc-id-stripe,.doc-footer,
+  .doc-spec-title,.cell-label,.cell-tag,.doc-scope-box,
+  .doc-equip-line,.print-header,.print-footer {
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  /* รูปภาพขึ้นหน้าใหม่เสมอ */
+  .doc-photos-section { page-break-before: always; }
+
+  /* ไม่ตัดกลางกล่อง */
+  .doc-info-table, .doc-spec-section, .doc-completion,
+  .doc-scope-box, .doc-equip-section { page-break-inside: avoid; }
 }
+
+
+/* ===== PRINT HEADER/FOOTER (hidden on screen) ===== */
+.print-header { display:none; }
+.print-footer { display:none; }
+
+.print-header-inner {
+  background:#3d1f0a;
+  padding:10px 20px 8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+.print-header-gold {
+  height:3px;
+  background:linear-gradient(90deg,#7a3e10 0%,#c9841a 25%,#e8c068 50%,#c9841a 75%,#7a3e10 100%);
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+.print-header-company {
+  font-family:'Sarabun',sans-serif;
+  font-size:12pt;
+  font-weight:700;
+  color:#f5e6c8;
+  letter-spacing:.03em;
+}
+.print-header-company small {
+  display:block;
+  font-size:8pt;
+  color:rgba(245,230,200,.65);
+  font-weight:400;
+}
+.print-header-docnum {
+  font-family:'Sarabun',sans-serif;
+  font-size:11pt;
+  font-weight:700;
+  color:#e8c068;
+  letter-spacing:.04em;
+}
+.print-footer-inner {
+  background:#3d1f0a;
+  padding:7px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+.print-footer-brand {
+  font-family:'Sarabun',sans-serif;
+  font-size:9pt;
+  font-weight:700;
+  color:#f5e6c8;
+}
+.print-footer-contact {
+  font-family:'Sarabun',sans-serif;
+  font-size:8pt;
+  color:rgba(245,230,200,.8);
+  text-align:right;
+}
+
+/* Equipment section */
+.doc-equip-section { margin-bottom:14px; }
+.doc-equip-lines-wrap {
+  border:1.5px solid #d4bc96;
+  border-radius:5px;
+  background:#fffdf8;
+  padding:6px 12px;
+}
+.doc-equip-line {
+  border:none;
+  border-bottom:1px solid #e2d0b0;
+  height:28px;
+  display:block;
+  width:100%;
+}
+.doc-equip-line:last-child { border-bottom:none; }
 
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
@@ -701,16 +811,33 @@ function buildDocHTML(r) {
   const scopeLines = (r.scope || '-').split('\n').map(l => l.trim()).filter(Boolean);
   const scopeHTML = scopeLines.map(l => `<div>${l}</div>`).join('');
   const sigSrc = r.sigImg || getSig();
+  const docNum = `TPE.${yr}/SA/${r.docNumber || ''}`;
+
+  // เส้นสำหรับกรอกอุปกรณ์ (8 เส้น)
+  const equipLines = Array(8).fill('<div class="doc-equip-line"></div>').join('');
 
   const photosHTML = r.photos && r.photos.length ? `
     <div class="doc-photos-section">
-      <div class="doc-section-label">รูปภาพประกอบงาน</div>
+      <div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>
       <div class="doc-photos">${r.photos.map(p => `<img src="${p.dataUrl}" alt="">`).join('')}</div>
     </div>` : '';
 
   return `
   <div class="doc-page">
 
+    <!-- PRINT HEADER (ทุกหน้าเวลาพิมพ์) -->
+    <div class="print-header" id="printHeader_${r.id}">
+      <div class="print-header-inner">
+        <div class="print-header-company">
+          THANAPHON ENGINEERING CO.,LTD.
+          <small>บริษัท ธนาพล เอ็นจิเนียริ่ง จำกัด · Champion Boiler CBD</small>
+        </div>
+        <div class="print-header-docnum">${docNum}</div>
+      </div>
+      <div class="print-header-gold"></div>
+    </div>
+
+    <!-- SCREEN HEADER -->
     <div class="doc-header">
       <div class="doc-header-inner">
         <div>
@@ -726,12 +853,11 @@ function buildDocHTML(r) {
         </div>
       </div>
     </div>
-
     <div class="doc-gold-rule"></div>
 
     <div class="doc-id-stripe">
       <span class="doc-id-label">Document No.</span>
-      <span class="doc-id-value">TPE.${yr}/SA/${r.docNumber || ''}</span>
+      <span class="doc-id-value">${docNum}</span>
     </div>
 
     <div class="doc-title-wrap">
@@ -773,8 +899,10 @@ function buildDocHTML(r) {
         <div class="doc-scope-box">${scopeHTML}</div>
       </div>
 
-      <div class="doc-section-label" style="margin-bottom:5px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
-      <div class="doc-equip-box"></div>
+      <div class="doc-equip-section">
+        <div class="doc-section-label" style="margin-bottom:6px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
+        <div class="doc-equip-lines-wrap">${equipLines}</div>
+      </div>
 
       <div class="doc-completion">
         <div class="doc-completion-text">
@@ -791,6 +919,7 @@ function buildDocHTML(r) {
 
     </div>
 
+    <!-- SCREEN FOOTER -->
     <div class="doc-footer">
       <div class="doc-footer-brand">
         THANAPHON ENGINEERING CO.,LTD.
@@ -800,6 +929,14 @@ function buildDocHTML(r) {
         <span>📞 081-132-8878</span>
         <span>✉ sales@thanaphon.tech</span>
         <span>🌐 https://thanaphon.tech</span>
+      </div>
+    </div>
+
+    <!-- PRINT FOOTER (ทุกหน้าเวลาพิมพ์) -->
+    <div class="print-footer">
+      <div class="print-footer-inner">
+        <div class="print-footer-brand">THANAPHON ENGINEERING CO.,LTD. · บริษัท ธนาพล เอ็นจิเนียริ่ง จำกัด</div>
+        <div class="print-footer-contact">☎ 081-132-8878 &nbsp;|&nbsp; ✉ sales@thanaphon.tech &nbsp;|&nbsp; 🌐 thanaphon.tech &nbsp;|&nbsp; Tax ID: 0905559005578</div>
       </div>
     </div>
 
