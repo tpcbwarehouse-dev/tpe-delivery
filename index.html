@@ -411,7 +411,7 @@ async function buildDocx(r) {
       width: { size: 10462, type: WidthType.DXA }, columnWidths: [7000, 3462],
       rows: [new TableRow({ children: [
         cel([par([mt('บัดนี้งานดังกล่าวได้ปฏิบัติงานเสร็จ และตรวจสอบความเรียบร้อยของงานจากหน้างานแล้ว', 32)])], 7000, noBo),
-        cel([par([sig], AlignmentType.CENTER), par([mt('(' + (r.engineer || 'นายเชิดชัย สุวรรณรักษ์') + ')', 32)], AlignmentType.CENTER), par([mt('วิศวกรผู้ควบคุม', 32)], AlignmentType.CENTER)], 3462, noBo),
+        cel([par([sig], AlignmentType.CENTER), par([mt('(' + (r.engineer || '-') + ')', 32)], AlignmentType.CENTER), par([mt('วิศวกรผู้ควบคุม', 32)], AlignmentType.CENTER)], 3462, noBo),
       ]})]
     }),
     sp(40),
@@ -424,7 +424,7 @@ async function buildDocx(r) {
   const doc = new Document({
     sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, right: 720, bottom: 720, left: 720 } } }, children }]
   });
-  return Packer.toBuffer(doc);
+  return Packer.toBlob(doc);
 }
 
 // ========== GENERATE & SAVE ==========
@@ -456,8 +456,7 @@ async function generateAndSave() {
 
     // Build & download docx
     btnText.textContent = 'กำลังสร้าง .docx...';
-    const buffer = await buildDocx(record);
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const blob = await buildDocx(record);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -596,8 +595,7 @@ async function downloadCurrent() {
   const btn = document.querySelector('.modal-footer .btn-primary');
   btn.textContent = '⏳ สร้าง...'; btn.disabled = true;
   try {
-    const buffer = await buildDocx(currentRecord);
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const blob = await buildDocx(currentRecord);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -610,8 +608,7 @@ async function downloadCurrent() {
 async function downloadRecord(id) {
   const record = (window._allRecords || []).find(r => String(r.id) === String(id));
   if (!record) return;
-  const buffer = await buildDocx(record);
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const blob = await buildDocx(record);
   const url = URL.createObjectURL(blob); const a = document.createElement('a');
   a.href = url; a.download = 'ใบส่งมอบงาน_TPE' + record.docNumber + '_' + (record.customerName || '').replace(/\s/g, '') + '.docx';
   a.click(); URL.revokeObjectURL(url);
