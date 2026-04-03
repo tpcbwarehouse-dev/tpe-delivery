@@ -682,13 +682,13 @@ async function generateDoc() {
       boilerType: g('boilerType') || '-', brand: g('brand') || '-',
       capacity: g('capacity') || '-', mfgYear: g('mfgYear') || '-',
       fuel: g('fuel') || '-', workingPressure: g('workingPressure') || '-',
-      scope: g('scope'), engineer: g('engineer') || ''
+      scope: g('scope'), engineer: g('engineer') || '',
+      sigImg: localStorage.getItem('tpe_sig') || SIG_DEFAULT,
+      photos: photos.map(p => ({ dataUrl: p.dataUrl }))
+    };
 
     // บันทึกชื่อวิศวกรไว้ใช้ครั้งถัดไป
     if (g('engineer')) localStorage.setItem('tpe_engineer_name', g('engineer'));
-    record.sigImg = localStorage.getItem('tpe_sig') || SIG_DEFAULT,
-      photos: photos.map(p => ({ dataUrl: p.dataUrl }))
-    };
 
     // Save to Sheet
     btnText.textContent = 'กำลังบันทึกลง Sheet...';
