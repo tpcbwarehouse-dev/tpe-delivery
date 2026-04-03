@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TPE — ใบส่งมอบงาน</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<script>
+// โหลด docx library และ expose เป็น window.docx
+</script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js" onload="window.__docxReady=true"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 :root{--bg:#0f1117;--surface:#1a1d27;--card:#21242f;--border:#2e3241;--accent:#3b82f6;--accent2:#60a5fa;--text:#e8eaf0;--muted:#8892a4;--success:#10b981;--danger:#ef4444;--label:#94a3b8;}
@@ -123,11 +126,11 @@ textarea{resize:vertical;min-height:68px;}
     <div class="grid-3">
       <div class="field">
         <label>เลขที่เอกสาร SA/<span class="required-mark">●</span></label>
-        <input type="text" id="docNumber" class="required-field" placeholder="330" autocomplete="off"/>
+        <input type="text" id="docNumber" class="required-field" placeholder="เช่น 330" autocomplete="off"/>
       </div>
       <div class="field">
         <label>เลข Job<span class="required-mark">●</span></label>
-        <input type="text" id="jobNumber" class="required-field" placeholder="26-053" autocomplete="off"/>
+        <input type="text" id="jobNumber" class="required-field" placeholder="เช่น 26-053" autocomplete="off"/>
       </div>
       <div class="field">
         <label>วันที่<span class="required-mark">●</span></label>
@@ -135,7 +138,7 @@ textarea{resize:vertical;min-height:68px;}
       </div>
       <div class="field span-2">
         <label>ชื่องาน<span class="required-mark">●</span></label>
-        <input type="text" id="jobName" class="required-field" placeholder="งานปรับปรุงบอยเลอร์ 15 ตัน" autocomplete="off"/>
+        <input type="text" id="jobName" class="required-field" placeholder="กรอกชื่องาน" autocomplete="off"/>
       </div>
       <div class="field">
         <label>REV.</label>
@@ -149,11 +152,11 @@ textarea{resize:vertical;min-height:68px;}
     <div class="grid-2">
       <div class="field">
         <label>รหัสลูกค้า<span class="required-mark">●</span></label>
-        <input type="text" id="customerCode" class="required-field" placeholder="C00006" autocomplete="off"/>
+        <input type="text" id="customerCode" class="required-field" placeholder="เช่น C00006" autocomplete="off"/>
       </div>
       <div class="field">
         <label>ชื่อบริษัทลูกค้า<span class="required-mark">●</span></label>
-        <input type="text" id="customerName" class="required-field" placeholder="บริษัท เมกก้า วู้ด จำกัด" autocomplete="off"/>
+        <input type="text" id="customerName" class="required-field" placeholder="กรอกชื่อบริษัท" autocomplete="off"/>
       </div>
     </div>
   </div>
@@ -162,7 +165,7 @@ textarea{resize:vertical;min-height:68px;}
     <div class="card-title">ขอบเขตงาน</div>
     <div class="field">
       <label>Scope of Work<span class="required-mark">●</span></label>
-      <textarea id="scope" class="required-field" placeholder="1.) ติดตั้งชุดปรับลมเข้าภายในเตา&#10;2.) ติดตั้งชุดปรับเชื้อเพลิงลงไซโลหน้าเตา"></textarea>
+      <textarea id="scope" class="required-field" placeholder="กรอกขอบเขตงาน"></textarea>
     </div>
     <div style="margin-top:11px;" class="field">
       <label>วิศวกรผู้ควบคุม</label>
@@ -175,12 +178,12 @@ textarea{resize:vertical;min-height:68px;}
     <div class="card-title">ข้อมูลหม้อน้ำ</div>
     <div class="optional-label">กรอกถ้ามี — ไม่กรอกจะใส่ "-" ให้อัตโนมัติ</div>
     <div class="grid-2 optional-section">
-      <div class="field"><label>Type</label><input type="text" id="boilerType" placeholder="เครื่องกำเนิดไอน้ำ"/></div>
-      <div class="field"><label>Brand</label><input type="text" id="brand" placeholder="CBD-15000"/></div>
-      <div class="field"><label>SIZE/CAPACITY</label><input type="text" id="capacity" placeholder="15,000 kg/hr"/></div>
-      <div class="field"><label>MFG Year</label><input type="text" id="mfgYear" placeholder="-"/></div>
-      <div class="field"><label>Fuel / เชื้อเพลิง</label><input type="text" id="fuel" placeholder="-"/></div>
-      <div class="field"><label>Working Pressure</label><input type="text" id="workingPressure" placeholder="-"/></div>
+      <div class="field"><label>Type</label><input type="text" id="boilerType" placeholder=""/></div>
+      <div class="field"><label>Brand</label><input type="text" id="brand" placeholder=""/></div>
+      <div class="field"><label>SIZE/CAPACITY</label><input type="text" id="capacity" placeholder=""/></div>
+      <div class="field"><label>MFG Year</label><input type="text" id="mfgYear" placeholder=""/></div>
+      <div class="field"><label>Fuel / เชื้อเพลิง</label><input type="text" id="fuel" placeholder=""/></div>
+      <div class="field"><label>Working Pressure</label><input type="text" id="workingPressure" placeholder=""/></div>
     </div>
   </div>
 
@@ -331,8 +334,11 @@ function b64ToUint8(b64) {
 function dataUrlToUint8(dataUrl) { return b64ToUint8(dataUrl.split(',')[1]); }
 
 async function buildDocx(r) {
+  // Handle both docx global names depending on CDN/version
+  const docxLib = (typeof docx !== 'undefined') ? docx : window.docx;
+  if (!docxLib) throw new Error('docx library ยังโหลดไม่เสร็จ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
-    AlignmentType, BorderStyle, WidthType, VerticalAlign, UnderlineType } = docx;
+    AlignmentType, BorderStyle, WidthType, VerticalAlign, UnderlineType } = docxLib;
 
   const mt = (text, size, bold, ul) => {
     size = size || 32;
@@ -444,7 +450,7 @@ async function generateAndSave() {
       boilerType: g('boilerType') || '-', brand: g('brand') || '-',
       capacity: g('capacity') || '-', mfgYear: g('mfgYear') || '-',
       fuel: g('fuel') || '-', workingPressure: g('workingPressure') || '-',
-      scope: g('scope'), engineer: g('engineer') || 'นายเชิดชัย สุวรรณรักษ์',
+      scope: g('scope'), engineer: g('engineer') || '-',
       photos: photos.map(p => ({ dataUrl: p.dataUrl, type: p.type }))
     };
 
