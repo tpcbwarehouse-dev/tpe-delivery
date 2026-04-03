@@ -1,0 +1,7 @@
+{
+  "name": "tpe-delivery",
+  "version": "1.0.0",
+  "dependencies": {
+    "googleapis": "^140.0.0"
+  }
+}
