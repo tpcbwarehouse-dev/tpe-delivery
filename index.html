@@ -81,6 +81,11 @@ textarea{resize:vertical;min-height:68px;}
 .btn-print:hover{background:rgba(16,185,129,.25);}
 .btn-del{background:rgba(239,68,68,.1);color:var(--danger);}
 .btn-del:hover{background:rgba(239,68,68,.2);}
+.btn-edit{background:rgba(245,158,11,.15);color:#d97706;}
+.btn-edit:hover{background:rgba(245,158,11,.25);}
+.btn-copy{background:rgba(139,92,246,.15);color:#7c3aed;}
+.btn-copy:hover{background:rgba(139,92,246,.25);}
+.btn-del:hover{background:rgba(239,68,68,.2);}
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
 .modal-overlay.hidden{display:none;}
@@ -590,19 +595,44 @@ textarea{resize:vertical;min-height:68px;}
 }
 .print-footer-brand {
   font-family: 'Sarabun', sans-serif;
-  font-size: 9pt;
+  font-size: 9.5pt;
   font-weight: 700;
   color: #f5e6c8;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.print-footer-brand small {
+  display: block;
+  font-weight: 400;
+  font-size: 8pt;
+  color: rgba(245,230,200,.65);
 }
 .print-footer-contact {
   font-family: 'Sarabun', sans-serif;
-  font-size: 8pt;
-  color: rgba(245,230,200,.8);
+  font-size: 8.5pt;
+  color: rgba(245,230,200,.85);
   text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.print-footer-sep {
+  width: 1px; height: 20px;
+  background: rgba(245,230,200,.25);
 }
 
 /* Equipment section */
 .doc-equip-section { margin-bottom: 14px; }
+.doc-scope-write-line {
+  border: none;
+  border-bottom: 1px solid #e2d0b0;
+  height: 30px;
+  display: block;
+  width: 100%;
+}
+.doc-scope-write-line:last-child { border-bottom: none; }
 .doc-equip-lines-wrap {
   border: 1.5px solid #d4bc96;
   border-radius: 5px;
@@ -612,11 +642,16 @@ textarea{resize:vertical;min-height:68px;}
 .doc-equip-line {
   border: none;
   border-bottom: 1px solid #e2d0b0;
-  height: 28px;
+  height: 30px;
   display: block;
   width: 100%;
 }
 .doc-equip-line:last-child { border-bottom: none; }
+
+/* Scope + Equip ขึ้นหน้า 2 */
+.doc-page2-break {
+  page-break-before: always;
+}
 
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
@@ -826,7 +861,10 @@ function buildDocHTML(r) {
   const scopeHTML = scopeLines.map(l => `<div>${l}</div>`).join('');
   const sigSrc = r.sigImg || getSig();
   const docNum = `TPE.${yr}/SA/${r.docNumber || ''}`;
-  const equipLines = Array(8).fill('<div class="doc-equip-line"></div>').join('');
+
+  // Scope lines (10 เส้น) + Equip lines (10 เส้น) เท่ากัน
+  const scopeWriteLines = Array(10).fill('<div class="doc-scope-write-line"></div>').join('');
+  const equipLines = Array(10).fill('<div class="doc-equip-line"></div>').join('');
 
   const photosHTML = r.photos && r.photos.length ? `
     <div class="doc-photos-section">
@@ -877,6 +915,7 @@ function buildDocHTML(r) {
       <div class="doc-title-en">Work Delivery Note</div>
     </div>
 
+    <!-- หน้า 1: ข้อมูลหลัก + ลายเซ็น -->
     <div class="doc-body">
 
       <table class="doc-info-table">
@@ -906,17 +945,7 @@ function buildDocHTML(r) {
         </div>
       </div>
 
-      <div class="doc-scope-section">
-        <div class="doc-section-label">Scope of Work — ขอบเขตงาน</div>
-        <div class="doc-scope-box">${scopeHTML}</div>
-      </div>
-
-      <div class="doc-equip-section">
-        <div class="doc-section-label" style="margin-bottom:6px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
-        <div class="doc-equip-lines-wrap">${equipLines}</div>
-      </div>
-
-      <div class="doc-completion">
+      <div class="doc-completion" style="margin-bottom:0;">
         <div class="doc-completion-text">
           บัดนี้งานดังกล่าวได้ปฏิบัติงานเสร็จ และตรวจสอบความเรียบร้อยของงานจากหน้างานแล้ว
         </div>
@@ -925,6 +954,22 @@ function buildDocHTML(r) {
           <div class="doc-sig-name">${r.engineer ? '(' + r.engineer + ')' : ''}</div>
           <div class="doc-sig-role">วิศวกรผู้ควบคุม</div>
         </div>
+      </div>
+
+    </div>
+
+    <!-- หน้า 2: Scope + Equip + รูป -->
+    <div class="doc-body doc-page2-break" style="padding-top:14px;">
+
+      <div class="doc-scope-section" style="margin-bottom:14px;">
+        <div class="doc-section-label">Scope of Work — ขอบเขตงาน</div>
+        <div class="doc-scope-box" style="margin-bottom:6px;">${scopeHTML}</div>
+        <div class="doc-equip-lines-wrap" style="border-top:none;border-radius:0 0 5px 5px;">${scopeWriteLines}</div>
+      </div>
+
+      <div class="doc-equip-section">
+        <div class="doc-section-label" style="margin-bottom:6px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
+        <div class="doc-equip-lines-wrap">${equipLines}</div>
       </div>
 
       ${photosHTML}
@@ -947,8 +992,19 @@ function buildDocHTML(r) {
     <!-- PRINT FOOTER ติดทุกหน้า -->
     <div class="print-footer">
       <div class="print-footer-inner">
-        <div class="print-footer-brand">THANAPHON ENGINEERING CO.,LTD. · บริษัท ธนาพล เอ็นจิเนียริ่ง จำกัด</div>
-        <div class="print-footer-contact">☎ 081-132-8878 &nbsp;|&nbsp; ✉ sales@thanaphon.tech &nbsp;|&nbsp; 🌐 thanaphon.tech &nbsp;|&nbsp; Tax ID: 0905559005578</div>
+        <div class="print-footer-brand">
+          THANAPHON ENGINEERING CO.,LTD.
+          <small>บริษัท ธนาพล เอ็นจิเนียริ่ง จำกัด</small>
+        </div>
+        <div class="print-footer-contact">
+          <span>📞 081-132-8878</span>
+          <div class="print-footer-sep"></div>
+          <span>✉ sales@thanaphon.tech</span>
+          <div class="print-footer-sep"></div>
+          <span>🌐 thanaphon.tech</span>
+          <div class="print-footer-sep"></div>
+          <span>Tax ID: 0905559005578</span>
+        </div>
       </div>
     </div>
 
@@ -1174,9 +1230,11 @@ function renderHistory() {
         <div class="hist-meta">Job ${r.jobNumber||'—'} | ${ds} | 📷 ${(r.photos||[]).length} รูป</div>
       </div>
       <div class="hist-actions">
-        <button class="btn-sm btn-view" onclick="openPreviewById(${r.id})">👁 ดู</button>
+        <button class="btn-sm btn-view"  onclick="openPreviewById(${r.id})">👁 ดู</button>
         <button class="btn-sm btn-print" onclick="printById(${r.id})">🖨 พิมพ์</button>
-        <button class="btn-sm btn-del" onclick="deleteRecord(${r.id})">🗑</button>
+        <button class="btn-sm btn-edit"  onclick="editRecord(${r.id})">✏️ แก้ไข</button>
+        <button class="btn-sm btn-copy"  onclick="copyRecord(${r.id})">📋 คัดลอก</button>
+        <button class="btn-sm btn-del"   onclick="deleteRecord(${r.id})">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -1194,8 +1252,53 @@ function printById(id) {
   printDoc();
 }
 
-function deleteRecord(id) {
-  if (!confirm('ลบเอกสารนี้?')) return;
+function editRecord(id) {
+  const records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  // โหลดข้อมูลกลับเข้าฟอร์ม
+  const fields = ['docNumber','jobNumber','date','jobName','rev',
+    'customerCode','customerName','boilerType','brand','capacity',
+    'mfgYear','fuel','workingPressure','scope','engineer'];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = r[f] || '';
+  });
+  // โหลดรูป
+  photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl }));
+  renderGrid();
+  // โหลดลายเซ็น
+  if (r.sigImg) showSigPreview(r.sigImg);
+  // ลบ record เดิม (จะ save ใหม่ตอนกด generate)
+  deleteRecord(id, true);
+  switchTab('form');
+  document.getElementById('statusMsg').textContent = '✏️ โหลดข้อมูลแล้ว — แก้ไขแล้วกดสร้างใหม่';
+  document.getElementById('statusMsg').className = 'status-msg success';
+}
+
+function copyRecord(id) {
+  const records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  const fields = ['jobNumber','date','jobName','rev',
+    'customerCode','customerName','boilerType','brand','capacity',
+    'mfgYear','fuel','workingPressure','scope','engineer'];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = r[f] || '';
+  });
+  // เคลียร์เลขเอกสาร เพราะเป็นใบใหม่
+  document.getElementById('docNumber').value = '';
+  photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl }));
+  renderGrid();
+  if (r.sigImg) showSigPreview(r.sigImg);
+  switchTab('form');
+  document.getElementById('statusMsg').textContent = '📋 คัดลอกแล้ว — กรอกเลขที่เอกสารใหม่แล้วกดสร้าง';
+  document.getElementById('statusMsg').className = 'status-msg success';
+}
+
+function deleteRecord(id, silent) {
+  if (!silent && !confirm('ลบเอกสารนี้?')) return;
   const updated = JSON.parse(localStorage.getItem('tpe_deliveries')||'[]').filter(r => r.id !== id);
   localStorage.setItem('tpe_deliveries', JSON.stringify(updated));
   updateBadge(); renderHistory();
