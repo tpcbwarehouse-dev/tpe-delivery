@@ -216,7 +216,7 @@ textarea{resize:vertical;min-height:68px;}
 }
 
 /* BODY */
-.doc-body { padding:16px 28px 14px; }
+.doc-body { padding:14px 24px 12px; }
 
 /* INFO TABLE */
 .doc-info-table {
@@ -225,11 +225,11 @@ textarea{resize:vertical;min-height:68px;}
   margin-bottom:14px;
   border-radius:6px;
   overflow:hidden;
-  border:1.5px solid #c4a882;
+  border:2px solid #8B6530;
 }
 .doc-info-table td {
   padding:8px 12px;
-  border:1px solid #d4bc96;
+  border:1.5px solid #9B7040;
   vertical-align:middle;
 }
 .cell-label {
@@ -539,8 +539,8 @@ textarea{resize:vertical;min-height:68px;}
 
   @page {
     size: A4;
-    margin: 0;
-    /* ปิด browser header/footer (URL, title, page number) */
+    margin: 10mm 8mm;
+    /* ปิด browser header/footer */
   }
 }
 
@@ -1124,7 +1124,7 @@ body { background: #fff; font-family: 'Sarabun', sans-serif; }
 .print-footer  { position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; }
 
 /* เว้นที่ content */
-.doc-page { padding-top: 56px; padding-bottom: 44px; }
+.doc-page { padding-top: 56px; padding-bottom: 44px; padding-left: 2mm; padding-right: 2mm; }
 
 /* ซ่อน screen header/footer */
 .doc-header, .doc-footer, .doc-gold-rule { display: none !important; }
