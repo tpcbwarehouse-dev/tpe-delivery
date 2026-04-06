@@ -658,6 +658,68 @@ textarea{resize:vertical;min-height:68px;}
 
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ===== ENGINEER PROFILES ===== */
+.eng-selector{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.eng-avatar{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;padding:8px 12px;border-radius:10px;
+  border:2px solid var(--border);background:var(--surface);
+  transition:border-color .2s,background .2s;min-width:80px;
+}
+.eng-avatar:hover{border-color:var(--accent);background:rgba(59,130,246,.06);}
+.eng-avatar.selected{border-color:#c9841a;background:rgba(201,132,26,.08);}
+.eng-avatar-sig{height:32px;object-fit:contain;margin-bottom:2px;}
+.eng-avatar-sig-placeholder{
+  height:32px;width:56px;border-radius:4px;
+  background:var(--border);display:flex;align-items:center;
+  justify-content:center;font-size:18px;margin-bottom:2px;
+}
+.eng-avatar-name{font-size:11px;color:var(--label);text-align:center;line-height:1.3;}
+.eng-add-btn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;padding:8px 12px;border-radius:10px;
+  border:2px dashed var(--border);background:transparent;
+  color:var(--muted);font-size:12px;min-width:80px;
+  transition:border-color .2s,color .2s;font-family:'Sarabun',sans-serif;
+}
+.eng-add-btn:hover{border-color:var(--accent);color:var(--accent2);}
+.eng-add-icon{font-size:22px;line-height:1;}
+
+/* Modal สำหรับเพิ่ม/แก้ engineer */
+.eng-modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.eng-modal-overlay.hidden{display:none;}
+.eng-modal{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  width:100%;max-width:380px;padding:24px;
+}
+.eng-modal h3{font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text);}
+.eng-modal .field{margin-bottom:14px;}
+.eng-modal label{font-size:12px;color:var(--label);font-weight:500;display:block;margin-bottom:5px;}
+.eng-modal input{width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:'Sarabun',sans-serif;
+  font-size:15px;padding:9px 11px;outline:none;}
+.eng-modal input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+.eng-sig-upload{
+  border:2px dashed var(--border);border-radius:7px;padding:10px 14px;
+  background:var(--surface);cursor:pointer;position:relative;
+  min-height:52px;display:flex;align-items:center;gap:10px;transition:border-color .2s;
+}
+.eng-sig-upload:hover{border-color:var(--accent);}
+.eng-sig-upload input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.eng-sig-preview{height:36px;object-fit:contain;}
+.eng-modal-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+.btn-cancel{background:var(--surface);color:var(--muted);border:1px solid var(--border);
+  border-radius:7px;font-family:'Sarabun',sans-serif;font-size:13px;padding:8px 16px;cursor:pointer;}
+.btn-save-eng{background:linear-gradient(135deg,#c9841a,#8B6530);color:#fff;border:none;
+  border-radius:7px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;
+  padding:8px 18px;cursor:pointer;}
+.btn-del-eng{background:rgba(239,68,68,.1);color:var(--danger);border:none;
+  border-radius:7px;font-family:'Sarabun',sans-serif;font-size:13px;
+  padding:8px 14px;cursor:pointer;margin-right:auto;}
+
 /* ===== AUTOCOMPLETE ===== */
 .autocomplete-wrap { position: relative; }
 .autocomplete-list {
@@ -753,22 +815,36 @@ textarea{resize:vertical;min-height:68px;}
   <div class="card">
     <div class="card-title">ขอบเขตงาน</div>
     <div class="field"><label>Scope of Work<span class="required-mark">●</span></label><textarea id="scope" placeholder="กรอกขอบเขตงาน"></textarea></div>
-    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
-    <div class="field">
-      <label>ชื่อวิศวกรผู้ควบคุม<span class="required-mark">●</span></label>
-      <input id="engineer" placeholder="กรอกชื่อ-นามสกุล"/>
-    </div>
-    <div class="field">
-      <label>ลายเซ็น (อัพโหลดรูป)</label>
-      <div id="sigUploadZone" style="border:2px dashed var(--border);border-radius:7px;padding:6px 10px;background:var(--surface);cursor:pointer;position:relative;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .2s;" onclick="document.getElementById('sigInput').click()">
-        <input type="file" id="sigInput" accept="image/*" style="display:none;" onchange="handleSigUpload(this)">
-        <span id="sigPreviewWrap" style="display:none;"><img id="sigPreview" style="height:36px;object-fit:contain;border-radius:3px;"></span>
-        <span id="sigPlaceholder" style="font-size:12px;color:var(--muted);">✍ คลิกเพื่ออัพโหลดลายเซ็น</span>
-        <button id="sigClearBtn" onclick="clearSig(event)" style="display:none;position:absolute;top:3px;right:4px;background:rgba(239,68,68,.8);border:none;border-radius:50%;width:16px;height:16px;font-size:9px;color:#fff;cursor:pointer;line-height:16px;text-align:center;padding:0;">✕</button>
-      </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:3px;">บันทึกไว้ใช้ครั้งถัดไปอัตโนมัติ</div>
-    </div>
+    <div style="margin-top:14px;">
+    <label style="font-size:12px;color:var(--label);font-weight:500;display:block;margin-bottom:8px;">วิศวกรผู้ควบคุม<span class="required-mark">●</span> <span style="font-weight:400;color:var(--muted);">— เลือกหรือเพิ่มใหม่</span></label>
+    <div class="eng-selector" id="engSelector"></div>
+    <input type="hidden" id="engineer">
   </div>
+  </div>
+
+  <!-- Engineer Modal -->
+  <div class="eng-modal-overlay hidden" id="engModal">
+    <div class="eng-modal">
+      <h3 id="engModalTitle">เพิ่มวิศวกร</h3>
+      <input type="hidden" id="engEditId">
+      <div class="field">
+        <label>ชื่อ-นามสกุล</label>
+        <input id="engName" placeholder="เช่น นายเชิดชัย สุวรรณรักษ์"/>
+      </div>
+      <div class="field">
+        <label>ลายเซ็น</label>
+        <div class="eng-sig-upload" onclick="document.getElementById('engSigInput').click()">
+          <input type="file" id="engSigInput" accept="image/*" onchange="handleEngSigUpload(this)">
+          <img id="engSigPreview" class="eng-sig-preview" style="display:none;">
+          <span id="engSigPlaceholder" style="font-size:12px;color:var(--muted);">📷 คลิกอัพโหลดลายเซ็น</span>
+        </div>
+      </div>
+      <div class="eng-modal-btns">
+        <button class="btn-del-eng" id="engDelBtn" onclick="deleteEngineer()" style="display:none;">🗑 ลบ</button>
+        <button class="btn-cancel" onclick="closeEngModal()">ยกเลิก</button>
+        <button class="btn-save-eng" onclick="saveEngineer()">บันทึก</button>
+      </div>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">รายละเอียด</div>
@@ -932,7 +1008,7 @@ function renderGrid() {
 
 // Validate
 function validate() {
-  const req = ['docNumber','jobNumber','date','jobName','customerCode','customerName','scope'];
+  const req = ['docNumber','jobNumber','date','jobName','customerCode','customerName','scope','engineer'];
   for (const id of req) {
     const el = document.getElementById(id);
     if (!el.value.trim()) {
@@ -1114,8 +1190,7 @@ async function generateDoc() {
       photos: photos.map(p => ({ dataUrl: p.dataUrl }))
     };
 
-    // บันทึกชื่อวิศวกรไว้ใช้ครั้งถัดไป
-    if (g('engineer')) localStorage.setItem('tpe_engineer_name', g('engineer'));
+    // engineer ถูก set ผ่าน profile selector แล้ว
 
     // Save to Sheet
     btnText.textContent = 'กำลังบันทึกลง Sheet...';
@@ -1239,45 +1314,160 @@ function getDocStyles() {
 }
 
 // History
-// ===== SIGNATURE MANAGEMENT =====
-function handleSigUpload(input) {
+// ===== ENGINEER PROFILES =====
+let currentEngSig = '';
+let selectedEngId = null;
+
+function getEngineers() {
+  return JSON.parse(localStorage.getItem('tpe_engineers') || '[]');
+}
+function saveEngineers(arr) {
+  localStorage.setItem('tpe_engineers', JSON.stringify(arr));
+}
+
+function renderEngSelector() {
+  const engineers = getEngineers();
+  const sel = document.getElementById('engSelector');
+  sel.innerHTML = engineers.map(e => `
+    <div class="eng-avatar ${selectedEngId === e.id ? 'selected' : ''}"
+         onclick="selectEngineer(${e.id})" ondblclick="openEngModal(${e.id})">
+      ${e.sig
+        ? `<img src="${e.sig}" class="eng-avatar-sig" alt="">`
+        : `<div class="eng-avatar-sig-placeholder">✍</div>`}
+      <div class="eng-avatar-name">${e.name.split(' ').slice(-1)[0] || e.name}</div>
+    </div>`).join('') +
+    `<button class="eng-add-btn" onclick="openEngModal(null)">
+      <span class="eng-add-icon">＋</span>
+      <span>เพิ่มใหม่</span>
+    </button>`;
+}
+
+function selectEngineer(id) {
+  const engineers = getEngineers();
+  const eng = engineers.find(e => e.id === id);
+  if (!eng) return;
+  selectedEngId = id;
+  document.getElementById('engineer').value = eng.name;
+  // บันทึก sig ที่จะใช้
+  localStorage.setItem('tpe_sig', eng.sig || '');
+  renderEngSelector();
+}
+
+function openEngModal(id) {
+  document.getElementById('engModal').classList.remove('hidden');
+  document.getElementById('engSigPreview').style.display = 'none';
+  document.getElementById('engSigPlaceholder').style.display = 'block';
+  document.getElementById('engSigInput').value = '';
+  currentEngSig = '';
+
+  if (id) {
+    const eng = getEngineers().find(e => e.id === id);
+    if (!eng) return;
+    document.getElementById('engModalTitle').textContent = 'แก้ไขวิศวกร';
+    document.getElementById('engEditId').value = id;
+    document.getElementById('engName').value = eng.name;
+    document.getElementById('engDelBtn').style.display = 'block';
+    if (eng.sig) {
+      currentEngSig = eng.sig;
+      document.getElementById('engSigPreview').src = eng.sig;
+      document.getElementById('engSigPreview').style.display = 'block';
+      document.getElementById('engSigPlaceholder').style.display = 'none';
+    }
+  } else {
+    document.getElementById('engModalTitle').textContent = 'เพิ่มวิศวกร';
+    document.getElementById('engEditId').value = '';
+    document.getElementById('engName').value = '';
+    document.getElementById('engDelBtn').style.display = 'none';
+  }
+}
+
+function closeEngModal() {
+  document.getElementById('engModal').classList.add('hidden');
+}
+
+function handleEngSigUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    const dataUrl = ev.target.result;
-    localStorage.setItem('tpe_sig', dataUrl);
-    showSigPreview(dataUrl);
+    currentEngSig = ev.target.result;
+    document.getElementById('engSigPreview').src = currentEngSig;
+    document.getElementById('engSigPreview').style.display = 'block';
+    document.getElementById('engSigPlaceholder').style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
 
-function showSigPreview(dataUrl) {
-  document.getElementById('sigPreview').src = dataUrl;
-  document.getElementById('sigPreviewWrap').style.display = 'block';
-  document.getElementById('sigPlaceholder').style.display = 'none';
-  document.getElementById('sigClearBtn').style.display = 'block';
-  document.getElementById('sigUploadZone').style.borderColor = 'var(--success)';
+function saveEngineer() {
+  const name = document.getElementById('engName').value.trim();
+  if (!name) { document.getElementById('engName').focus(); return; }
+  const editId = parseInt(document.getElementById('engEditId').value) || null;
+  const engineers = getEngineers();
+
+  if (editId) {
+    const idx = engineers.findIndex(e => e.id === editId);
+    if (idx >= 0) {
+      engineers[idx].name = name;
+      if (currentEngSig) engineers[idx].sig = currentEngSig;
+    }
+  } else {
+    engineers.push({ id: Date.now(), name, sig: currentEngSig });
+  }
+  saveEngineers(engineers);
+  closeEngModal();
+  renderEngSelector();
+  // auto-select ที่เพิ่ง save
+  if (!editId) {
+    const last = getEngineers().slice(-1)[0];
+    if (last) selectEngineer(last.id);
+  } else {
+    if (selectedEngId === editId) selectEngineer(editId); // refresh
+  }
 }
 
-function clearSig(e) {
-  e.stopPropagation();
-  localStorage.removeItem('tpe_sig');
-  document.getElementById('sigInput').value = '';
-  document.getElementById('sigPreviewWrap').style.display = 'none';
-  document.getElementById('sigPlaceholder').style.display = 'block';
-  document.getElementById('sigClearBtn').style.display = 'none';
-  document.getElementById('sigUploadZone').style.borderColor = '';
+function deleteEngineer() {
+  const id = parseInt(document.getElementById('engEditId').value);
+  if (!id || !confirm('ลบวิศวกรคนนี้?')) return;
+  saveEngineers(getEngineers().filter(e => e.id !== id));
+  if (selectedEngId === id) {
+    selectedEngId = null;
+    document.getElementById('engineer').value = '';
+    localStorage.removeItem('tpe_sig');
+  }
+  closeEngModal();
+  renderEngSelector();
 }
 
-// โหลดลายเซ็นที่บันทึกไว้
-(function initSig() {
-  const saved = localStorage.getItem('tpe_sig');
-  if (saved) showSigPreview(saved);
-  // โหลดชื่อวิศวกรที่บันทึกไว้
-  const savedName = localStorage.getItem('tpe_engineer_name');
-  if (savedName) document.getElementById('engineer').value = savedName;
+// ปิด modal เมื่อคลิก overlay
+document.getElementById('engModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEngModal();
+});
+
+// Init
+(function initEngineers() {
+  // migrate ข้อมูลเดิม (ถ้ามี)
+  const oldSig  = localStorage.getItem('tpe_sig');
+  const oldName = localStorage.getItem('tpe_engineer_name');
+  const existing = getEngineers();
+  if (existing.length === 0 && oldName) {
+    const migrated = [{ id: Date.now(), name: oldName, sig: oldSig || '' }];
+    saveEngineers(migrated);
+    selectedEngId = migrated[0].id;
+    document.getElementById('engineer').value = oldName;
+  } else if (existing.length > 0) {
+    // auto-select คนแรก
+    selectedEngId = existing[0].id;
+    document.getElementById('engineer').value = existing[0].name;
+    if (existing[0].sig) localStorage.setItem('tpe_sig', existing[0].sig);
+  }
+  renderEngSelector();
 })();
+
+// Legacy compat
+function getSig() { return localStorage.getItem('tpe_sig') || SIG_DEFAULT; }
+function getSigName() { return document.getElementById('engineer').value || ''; }
+function showSigPreview() {}
+function clearSig() {}
 
 // ===== AUTOCOMPLETE =====
 let acActiveIdx = -1;
@@ -1424,8 +1614,13 @@ function editRecord(id) {
   // โหลดรูป
   photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl }));
   renderGrid();
-  // โหลดลายเซ็น
-  if (r.sigImg) showSigPreview(r.sigImg);
+  // โหลด engineer ที่ตรงกัน
+  if (r.engineer) {
+    const engs = getEngineers();
+    const match = engs.find(e => e.name === r.engineer);
+    if (match) selectEngineer(match.id);
+    else document.getElementById('engineer').value = r.engineer;
+  }
   // ลบ record เดิม (จะ save ใหม่ตอนกด generate)
   deleteRecord(id, true);
   switchTab('form');
