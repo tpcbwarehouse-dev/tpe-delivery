@@ -523,7 +523,7 @@ textarea{resize:vertical;min-height:68px;}
   }
 
   /* รูปภาพขึ้นหน้าใหม่ */
-  .doc-photos-section { page-break-before: always; }
+  .doc-photos-section { page-break-before: always; padding-top: 0; }
 
   /* ไม่ตัดกลางกล่อง */
   .doc-info-table, .doc-spec-section, .doc-completion,
@@ -649,9 +649,7 @@ textarea{resize:vertical;min-height:68px;}
 .doc-equip-line:last-child { border-bottom: none; }
 
 /* Scope + Equip ขึ้นหน้า 2 */
-.doc-page2-break {
-  /* no break — all on page 1 */
-}
+.doc-page2-break { /* all on page 1 */ }
 
 @keyframes spin{to{transform:rotate(360deg);}}
 .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
@@ -891,12 +889,8 @@ function buildDocHTML(r) {
   const scopeHTML = scopeLines.map(l => `<div>${l}</div>`).join('');
   const sigSrc = r.sigImg || getSig();
   const docNum = `TPE.${yr}/SA/${r.docNumber || ''}`;
+  const equipLines = Array(5).fill('<div class="doc-equip-line"></div>').join('');
 
-  // เส้นเขียนเพิ่มใต้ scope (6 เส้น) และ equip (8 เส้น)
-  const scopeExtraLines = Array(6).fill('<div class="doc-scope-write-line"></div>').join('');
-  const equipLines      = Array(8).fill('<div class="doc-equip-line"></div>').join('');
-
-  // รูปขึ้นหน้า 2
   const photosHTML = r.photos && r.photos.length ? `
     <div class="doc-photos-section">
       <div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>
@@ -906,7 +900,6 @@ function buildDocHTML(r) {
   return `
   <div class="doc-page">
 
-    <!-- PRINT HEADER ติดทุกหน้า -->
     <div class="print-header">
       <div class="print-header-inner">
         <div class="print-header-company">
@@ -918,7 +911,6 @@ function buildDocHTML(r) {
       <div class="print-header-gold"></div>
     </div>
 
-    <!-- SCREEN HEADER -->
     <div class="doc-header">
       <div class="doc-header-inner">
         <div>
@@ -946,7 +938,6 @@ function buildDocHTML(r) {
       <div class="doc-title-en">Work Delivery Note</div>
     </div>
 
-    <!-- หน้า 1: ทุกอย่างอยู่ด้วยกัน -->
     <div class="doc-body">
 
       <table class="doc-info-table">
@@ -979,7 +970,6 @@ function buildDocHTML(r) {
       <div class="doc-scope-section" style="margin-bottom:10px;">
         <div class="doc-section-label">Scope of Work — ขอบเขตงาน</div>
         <div class="doc-scope-box">${scopeHTML}</div>
-        <div class="doc-equip-lines-wrap" style="border-top:none;border-radius:0 0 5px 5px;">${scopeExtraLines}</div>
       </div>
 
       <div class="doc-equip-section">
@@ -987,7 +977,7 @@ function buildDocHTML(r) {
         <div class="doc-equip-lines-wrap">${equipLines}</div>
       </div>
 
-      <div class="doc-completion" style="margin-top:10px;">
+      <div class="doc-completion" style="margin-top:10px;margin-bottom:0;">
         <div class="doc-completion-text">
           บัดนี้งานดังกล่าวได้ปฏิบัติงานเสร็จ และตรวจสอบความเรียบร้อยของงานจากหน้างานแล้ว
         </div>
@@ -998,12 +988,10 @@ function buildDocHTML(r) {
         </div>
       </div>
 
-      <!-- รูปภาพขึ้นหน้า 2 -->
       ${photosHTML}
 
     </div>
 
-    <!-- SCREEN FOOTER -->
     <div class="doc-footer">
       <div class="doc-footer-brand">
         THANAPHON ENGINEERING CO.,LTD.
@@ -1016,7 +1004,6 @@ function buildDocHTML(r) {
       </div>
     </div>
 
-    <!-- PRINT FOOTER ติดทุกหน้า -->
     <div class="print-footer">
       <div class="print-footer-inner">
         <div class="print-footer-brand">
