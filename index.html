@@ -650,7 +650,7 @@ textarea{resize:vertical;min-height:68px;}
 
 /* Scope + Equip ขึ้นหน้า 2 */
 .doc-page2-break {
-  page-break-before: always;
+  /* no break — all on page 1 */
 }
 
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -892,10 +892,11 @@ function buildDocHTML(r) {
   const sigSrc = r.sigImg || getSig();
   const docNum = `TPE.${yr}/SA/${r.docNumber || ''}`;
 
-  // Scope lines (10 เส้น) + Equip lines (10 เส้น) เท่ากัน
-  const scopeWriteLines = Array(10).fill('<div class="doc-scope-write-line"></div>').join('');
-  const equipLines = Array(10).fill('<div class="doc-equip-line"></div>').join('');
+  // เส้นเขียนเพิ่มใต้ scope (6 เส้น) และ equip (8 เส้น)
+  const scopeExtraLines = Array(6).fill('<div class="doc-scope-write-line"></div>').join('');
+  const equipLines      = Array(8).fill('<div class="doc-equip-line"></div>').join('');
 
+  // รูปขึ้นหน้า 2
   const photosHTML = r.photos && r.photos.length ? `
     <div class="doc-photos-section">
       <div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>
@@ -945,7 +946,7 @@ function buildDocHTML(r) {
       <div class="doc-title-en">Work Delivery Note</div>
     </div>
 
-    <!-- หน้า 1: ข้อมูลหลัก + ลายเซ็น -->
+    <!-- หน้า 1: ทุกอย่างอยู่ด้วยกัน -->
     <div class="doc-body">
 
       <table class="doc-info-table">
@@ -975,7 +976,18 @@ function buildDocHTML(r) {
         </div>
       </div>
 
-      <div class="doc-completion" style="margin-bottom:0;">
+      <div class="doc-scope-section" style="margin-bottom:10px;">
+        <div class="doc-section-label">Scope of Work — ขอบเขตงาน</div>
+        <div class="doc-scope-box">${scopeHTML}</div>
+        <div class="doc-equip-lines-wrap" style="border-top:none;border-radius:0 0 5px 5px;">${scopeExtraLines}</div>
+      </div>
+
+      <div class="doc-equip-section">
+        <div class="doc-section-label" style="margin-bottom:6px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
+        <div class="doc-equip-lines-wrap">${equipLines}</div>
+      </div>
+
+      <div class="doc-completion" style="margin-top:10px;">
         <div class="doc-completion-text">
           บัดนี้งานดังกล่าวได้ปฏิบัติงานเสร็จ และตรวจสอบความเรียบร้อยของงานจากหน้างานแล้ว
         </div>
@@ -986,22 +998,7 @@ function buildDocHTML(r) {
         </div>
       </div>
 
-    </div>
-
-    <!-- หน้า 2: Scope + Equip + รูป -->
-    <div class="doc-body doc-page2-break" style="padding-top:14px;">
-
-      <div class="doc-scope-section" style="margin-bottom:14px;">
-        <div class="doc-section-label">Scope of Work — ขอบเขตงาน</div>
-        <div class="doc-scope-box" style="margin-bottom:6px;">${scopeHTML}</div>
-        <div class="doc-equip-lines-wrap" style="border-top:none;border-radius:0 0 5px 5px;">${scopeWriteLines}</div>
-      </div>
-
-      <div class="doc-equip-section">
-        <div class="doc-section-label" style="margin-bottom:6px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
-        <div class="doc-equip-lines-wrap">${equipLines}</div>
-      </div>
-
+      <!-- รูปภาพขึ้นหน้า 2 -->
       ${photosHTML}
 
     </div>
