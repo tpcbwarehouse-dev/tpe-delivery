@@ -657,6 +657,49 @@ textarea{resize:vertical;min-height:68px;}
 .doc-page2-break { /* all on page 1 */ }
 
 @keyframes spin{to{transform:rotate(360deg);}}
+
+/* ===== AUTOCOMPLETE ===== */
+.autocomplete-wrap { position: relative; }
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  margin-top: 3px;
+}
+.autocomplete-item {
+  padding: 9px 13px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item.active { background: rgba(59,130,246,.12); }
+.autocomplete-item .ac-code {
+  font-size: 11px;
+  color: var(--accent2);
+  background: rgba(59,130,246,.12);
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.autocomplete-item .ac-name {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
 @media(max-width:580px){.grid-2,.grid-3{grid-template-columns:1fr;}.span-2{grid-column:span 1;}.hist-actions{flex-wrap:wrap;}}
 </style>
@@ -689,8 +732,22 @@ textarea{resize:vertical;min-height:68px;}
   <div class="card">
     <div class="card-title">ข้อมูลลูกค้า</div>
     <div class="grid-2">
-      <div class="field"><label>รหัสลูกค้า<span class="required-mark">●</span></label><input id="customerCode" placeholder="เช่น C00006"/></div>
-      <div class="field"><label>ชื่อบริษัท<span class="required-mark">●</span></label><input id="customerName" placeholder="กรอกชื่อบริษัท"/></div>
+      <div class="field">
+        <label>รหัสลูกค้า<span class="required-mark">●</span></label>
+        <div class="autocomplete-wrap">
+          <input id="customerCode" placeholder="เช่น C00006" autocomplete="off"
+            oninput="acSearch('customerCode')" onkeydown="acKey(event,'customerCode')" onfocus="acSearch('customerCode')"/>
+          <div class="autocomplete-list" id="ac_customerCode" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>ชื่อบริษัท<span class="required-mark">●</span></label>
+        <div class="autocomplete-wrap">
+          <input id="customerName" placeholder="กรอกชื่อบริษัท" autocomplete="off"
+            oninput="acSearch('customerName')" onkeydown="acKey(event,'customerName')" onfocus="acSearch('customerName')"/>
+          <div class="autocomplete-list" id="ac_customerName" style="display:none;"></div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -714,7 +771,7 @@ textarea{resize:vertical;min-height:68px;}
   </div>
   </div>
   <div class="card">
-    <div class="card-title">ข้อมูลหม้อน้ำ</div>
+    <div class="card-title">รายละเอียด</div>
     <div class="optional-label">กรอกถ้ามี — ไม่กรอกใส่ "-" ให้อัตโนมัติ</div>
     <div class="grid-2 optional-section">
       <div class="field"><label>Type</label><input id="boilerType"/></div>
@@ -1221,6 +1278,86 @@ function clearSig(e) {
   const savedName = localStorage.getItem('tpe_engineer_name');
   if (savedName) document.getElementById('engineer').value = savedName;
 })();
+
+// ===== AUTOCOMPLETE =====
+let acActiveIdx = -1;
+
+function getCustomerHistory() {
+  // ดึงรายชื่อลูกค้าที่ไม่ซ้ำจาก localStorage
+  const records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  const seen = new Map();
+  records.forEach(r => {
+    if (r.customerCode && r.customerName) {
+      const key = r.customerCode.trim();
+      if (!seen.has(key)) {
+        seen.set(key, { code: r.customerCode.trim(), name: r.customerName.trim() });
+      }
+    }
+  });
+  return Array.from(seen.values());
+}
+
+function acSearch(fieldId) {
+  const input = document.getElementById(fieldId);
+  const drop  = document.getElementById('ac_' + fieldId);
+  const q     = input.value.trim().toLowerCase();
+  const customers = getCustomerHistory();
+
+  // filter ตาม field ที่พิมพ์
+  const filtered = customers.filter(c =>
+    fieldId === 'customerCode'
+      ? c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
+      : c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+  );
+
+  if (filtered.length === 0) { drop.style.display = 'none'; return; }
+
+  acActiveIdx = -1;
+  drop.innerHTML = filtered.slice(0, 8).map((c, i) =>
+    `<div class="autocomplete-item" data-idx="${i}"
+       onmousedown="acSelect('${c.code.replace(/'/g,"\'")}','${c.name.replace(/'/g,"\'")}')">
+      <span class="ac-code">${c.code}</span>
+      <span class="ac-name">${c.name}</span>
+    </div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+
+function acSelect(code, name) {
+  document.getElementById('customerCode').value = code;
+  document.getElementById('customerName').value = name;
+  document.getElementById('ac_customerCode').style.display = 'none';
+  document.getElementById('ac_customerName').style.display = 'none';
+  acActiveIdx = -1;
+}
+
+function acKey(e, fieldId) {
+  const drop  = document.getElementById('ac_' + fieldId);
+  const items = drop.querySelectorAll('.autocomplete-item');
+  if (!items.length || drop.style.display === 'none') return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acActiveIdx = Math.min(acActiveIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === acActiveIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acActiveIdx = Math.max(acActiveIdx - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('active', i === acActiveIdx));
+  } else if (e.key === 'Enter' && acActiveIdx >= 0) {
+    e.preventDefault();
+    items[acActiveIdx].dispatchEvent(new MouseEvent('mousedown'));
+  } else if (e.key === 'Escape') {
+    drop.style.display = 'none';
+  }
+}
+
+// ปิด dropdown เมื่อคลิกที่อื่น
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) {
+    document.querySelectorAll('.autocomplete-list').forEach(d => d.style.display = 'none');
+  }
+});
 
 function updateBadge() {
   const n = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]').length;
