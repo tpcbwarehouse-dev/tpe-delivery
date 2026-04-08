@@ -1034,7 +1034,21 @@ function buildDocHTML(r) {
   const scopeLines = (r.scope || '-').split('\n').map(l => l.trim()).filter(Boolean);
   const scopeHTML = scopeLines.map(l => `<div>${l}</div>`).join('');
   const sigSrc = r.sigImg || getSig();
-  const docNum = `TPE.${yr}/SA/${r.docNumber || ''}`;
+  const docNum = `TPE.\${yr}/SA/\${r.docNumber || ''}`;
+
+  // format วันที่ — รองรับทั้ง dd/mm/yyyy และ ISO string
+  function formatDate(d) {
+    if (!d) return '';
+    if (d.includes('T')) {
+      // ISO string → แปลงเป็น dd/mm/yyyy
+      const dt = new Date(d);
+      return String(dt.getDate()).padStart(2,'0') + '/' +
+             String(dt.getMonth()+1).padStart(2,'0') + '/' +
+             dt.getFullYear();
+    }
+    return d; // dd/mm/yyyy อยู่แล้ว
+  }
+  const displayDate = formatDate(r.date);
   const equipLines = Array(5).fill('<div class="doc-equip-line"></div>').join('');
 
   // คำนวณ grid columns ตามจำนวนรูป
@@ -1120,7 +1134,7 @@ function buildDocHTML(r) {
           <td class="cell-label">รหัส<small>${r.customerCode || ''}</small></td>
           <td class="cell-main">${r.customerName || ''}</td>
           <td class="cell-tag">วันที่</td>
-          <td class="cell-val">${r.date || ''}</td>
+          <td class="cell-val">${displayDate}</td>
         </tr>
         <tr>
           <td class="cell-label">Job.<small>${r.jobNumber || ''}</small></td>
