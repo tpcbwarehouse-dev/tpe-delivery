@@ -389,7 +389,7 @@ textarea{resize:vertical;min-height:68px;}
 .doc-photos-next-page { page-break-before: always; padding-top: 8px; }
 .doc-photos {
   display:grid;
-  gap:6px;
+  gap:5px;
 }
 .doc-photos.cols-1 { grid-template-columns: 1fr; }
 .doc-photos.cols-2 { grid-template-columns: 1fr 1fr; }
@@ -403,6 +403,10 @@ textarea{resize:vertical;min-height:68px;}
   border:1px solid #d4bc96;
   display:block;
 }
+/* 1 รูป — สูงขึ้น */
+.doc-photos.cols-1 img { aspect-ratio: 16/9; }
+/* 2 คอลัมน์ — สูงขึ้นหน่อย */
+.doc-photos.cols-2 img { aspect-ratio: 3/2; }
 
 /* FOOTER */
 .doc-footer {
@@ -1035,10 +1039,12 @@ function buildDocHTML(r) {
 
   // คำนวณ grid columns ตามจำนวนรูป
   function getPhotoCols(n) {
-    if (n === 1) return 1;
-    if (n <= 4) return 2;
-    if (n <= 10) return 3;
-    return 4;
+    if (n === 1) return 1;      // 1 รูป — เต็มความกว้าง
+    if (n === 2) return 2;      // 2 รูป — 2 คอลัมน์ สูง
+    if (n <= 4) return 2;       // 3-4 รูป — 2 คอลัมน์ 2 แถว
+    if (n <= 6) return 3;       // 5-6 รูป — 3 คอลัมน์ 2 แถว
+    if (n <= 9) return 3;       // 7-9 รูป — 3 คอลัมน์ 3 แถว
+    return 3;                   // 10-12 รูป — 3 คอลัมน์ 4 แถว (เต็ม A4)
   }
 
   function buildPhotosHTML(photos) {
@@ -1047,7 +1053,7 @@ function buildDocHTML(r) {
 
     // แบ่งเป็น chunk ละ 10 รูป (1 หน้า)
     const pages = [];
-    for (let i = 0; i < total; i += 10) {
+    for (let i = 0; i < total; i += 12) {
       pages.push(photos.slice(i, i + 10));
     }
 
