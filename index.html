@@ -386,11 +386,15 @@ textarea{resize:vertical;min-height:68px;}
 
 /* PHOTOS */
 .doc-photos-section { margin-bottom:14px; }
+.doc-photos-next-page { page-break-before: always; padding-top: 8px; }
 .doc-photos {
   display:grid;
-  grid-template-columns:1fr 1fr;
   gap:6px;
 }
+.doc-photos.cols-1 { grid-template-columns: 1fr; }
+.doc-photos.cols-2 { grid-template-columns: 1fr 1fr; }
+.doc-photos.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.doc-photos.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
 .doc-photos img {
   width:100%;
   aspect-ratio:4/3;
@@ -1029,11 +1033,38 @@ function buildDocHTML(r) {
   const docNum = `TPE.${yr}/SA/${r.docNumber || ''}`;
   const equipLines = Array(5).fill('<div class="doc-equip-line"></div>').join('');
 
-  const photosHTML = r.photos && r.photos.length ? `
-    <div class="doc-photos-section">
-      <div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>
-      <div class="doc-photos">${r.photos.map(p => `<img src="${p.dataUrl}" alt="">`).join('')}</div>
-    </div>` : '';
+  // คำนวณ grid columns ตามจำนวนรูป
+  function getPhotoCols(n) {
+    if (n <= 2) return 1;
+    if (n <= 4) return 2;
+    if (n <= 6) return 3;
+    return 4;
+  }
+
+  function buildPhotosHTML(photos) {
+    if (!photos || !photos.length) return '';
+    const total = photos.length;
+
+    // แบ่งเป็น chunk ละ 10 รูป (1 หน้า)
+    const pages = [];
+    for (let i = 0; i < total; i += 10) {
+      pages.push(photos.slice(i, i + 10));
+    }
+
+    return pages.map((pagePhotos, pageIdx) => {
+      const cols = getPhotoCols(pagePhotos.length);
+      const isFirst = pageIdx === 0;
+      return `
+      <div class="doc-photos-section${isFirst ? '' : ' doc-photos-next-page'}">
+        ${isFirst ? '<div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>' : ''}
+        <div class="doc-photos cols-${cols}">
+          ${pagePhotos.map(p => `<img src="${p.dataUrl}" alt="">`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const photosHTML = buildPhotosHTML(r.photos);
 
   return `
   <div class="doc-page">
