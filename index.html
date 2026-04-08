@@ -793,7 +793,7 @@ textarea{resize:vertical;min-height:68px;}
   <div class="card">
     <div class="card-title">ข้อมูลเอกสาร <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px;">● = จำเป็น</span></div>
     <div class="grid-3">
-      <div class="field"><label>เลขที่ SA/<span class="required-mark">●</span></label><input id="docNumber" placeholder="เช่น 330"/></div>
+      <div class="field"><label>เลขที่ SA/<span class="required-mark">●</span></label><input id="docNumber" placeholder="318" title="กรอกเฉพาะเลข เช่น 318 (ไม่ต้องใส่ TPE.2026/SA/)"/></div>
       <div class="field"><label>เลข Job<span class="required-mark">●</span></label><input id="jobNumber" placeholder="เช่น 26-053"/></div>
       <div class="field"><label>วันที่<span class="required-mark">●</span></label><input id="date"/></div>
       <div class="field span-2"><label>ชื่องาน<span class="required-mark">●</span></label><input id="jobName" placeholder="กรอกชื่องาน"/></div>
@@ -1035,7 +1035,10 @@ function buildDocHTML(r) {
   const scopeLines = (r.scope || '-').split('\n').map(l => l.trim()).filter(Boolean);
   const scopeHTML = scopeLines.map(l => `<div>${l}</div>`).join('');
   const sigSrc = r.sigImg || getSig();
-  const docNum = 'TPE.' + yr + '/SA/' + (r.docNumber || '');
+  // ถ้า docNumber เก็บเต็ม (TPE.2026/SA/318) ให้ดึงแค่เลขท้าย
+  const rawDoc = r.docNumber || '';
+  const cleanDoc = rawDoc.includes('/') ? rawDoc.split('/').pop() : rawDoc;
+  const docNum = cleanDoc;
 
   // format วันที่ — รองรับทั้ง dd/mm/yyyy และ ISO string
   function formatDate(d) {
