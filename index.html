@@ -908,7 +908,6 @@ textarea{resize:vertical;min-height:68px;}
   <div class="card">
     <div class="card-title">ขอบเขตงาน</div>
     <div class="field"><label>Scope of Work<span class="required-mark">●</span></label><textarea id="scope" placeholder="กรอกขอบเขตงาน"></textarea></div>
-    <div style="margin-top:12px;" class="field"><label>อุปกรณ์ที่เปลี่ยน — Equipment Replaced</label><textarea id="equipment" placeholder="กรอกรายการอุปกรณ์ (ถ้ามี)"></textarea></div>
     <div style="margin-top:14px;">
     <label style="font-size:12px;color:var(--label);font-weight:500;display:block;margin-bottom:8px;">วิศวกรผู้ควบคุม<span class="required-mark">●</span> <span style="font-weight:400;color:var(--muted);">— เลือกหรือเพิ่มใหม่</span></label>
     <div class="eng-selector" id="engSelector"></div>
@@ -1375,13 +1374,24 @@ async function generateDoc() {
 
     // engineer ถูก set ผ่าน profile selector แล้ว
 
+    // ถ้าเป็นการแก้ไข ลบ record เดิมก่อน
+    if (window._editingId) {
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'delete', id: window._editingId }),
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      } catch(e) {}
+      window._editingId = null;
+    }
     // Save to Sheet
     btnText.textContent = 'กำลังบันทึกลง Sheet...';
     try {
       await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify(record),
-        headers: { 'Content-Type': 'text/plain' } // Apps Script ต้องการ text/plain
+        headers: { 'Content-Type': 'text/plain' }
       });
     } catch(e) { console.warn('Sheet save failed (will save locally)', e); }
 
@@ -1841,11 +1851,7 @@ function printById(id) {
   printDoc();
 }
 
-function editRecord(id) {
-  const records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
-  const r = records.find(x => x.id === id);
-  if (!r) return;
-  // โหลดข้อมูลกลับเข้าฟอร์ม
+function loadRecordToForm(r) {
   const fields = ['docNumber','jobNumber','date','jobName','rev',
     'customerCode','customerName','boilerType','brand','capacity',
     'mfgYear','fuel','workingPressure','scope','equipment','engineer'];
@@ -1853,44 +1859,36 @@ function editRecord(id) {
     const el = document.getElementById(f);
     if (el) el.value = r[f] || '';
   });
-  // โหลดรูป
   photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl }));
   renderGrid();
-  // โหลด engineer ที่ตรงกัน
   if (r.engineer) {
     const engs = getEngineers();
     const match = engs.find(e => e.name === r.engineer);
     if (match) selectEngineer(match.id);
     else document.getElementById('engineer').value = r.engineer;
   }
-  // ลบ record เดิม (จะ save ใหม่ตอนกด generate)
-  deleteRecord(id, true);
+}
+
+function editRecord(id) {
+  const r = (window._allRecords || []).find(x => String(x.id) === String(id));
+  if (!r) { alert('ไม่พบข้อมูล กรุณาเปิดแท็บประวัติใหม่อีกครั้ง'); return; }
+  loadRecordToForm(r);
+  window._editingId = String(id);
   switchTab('form');
   document.getElementById('statusMsg').textContent = '✏️ โหลดข้อมูลแล้ว — แก้ไขแล้วกดสร้างใหม่';
   document.getElementById('statusMsg').className = 'status-msg success';
 }
 
 function copyRecord(id) {
-  const records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
-  const r = records.find(x => x.id === id);
-  if (!r) return;
-  const fields = ['jobNumber','date','jobName','rev',
-    'customerCode','customerName','boilerType','brand','capacity',
-    'mfgYear','fuel','workingPressure','scope','engineer'];
-  fields.forEach(f => {
-    const el = document.getElementById(f);
-    if (el) el.value = r[f] || '';
-  });
-  // เคลียร์เลขเอกสาร เพราะเป็นใบใหม่
+  const r = (window._allRecords || []).find(x => String(x.id) === String(id));
+  if (!r) { alert('ไม่พบข้อมูล กรุณาเปิดแท็บประวัติใหม่อีกครั้ง'); return; }
+  loadRecordToForm(r);
   document.getElementById('docNumber').value = '';
-  photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl }));
-  renderGrid();
-  if (r.sigImg) showSigPreview(r.sigImg);
+  window._editingId = null;
   switchTab('form');
   document.getElementById('statusMsg').textContent = '📋 คัดลอกแล้ว — กรอกเลขที่เอกสารใหม่แล้วกดสร้าง';
   document.getElementById('statusMsg').className = 'status-msg success';
 }
-
 function deleteRecord(id, silent) {
   if (!silent && !confirm('ลบเอกสารนี้?')) return;
   window._allRecords = (window._allRecords || []).filter(r => String(r.id) !== String(id));
