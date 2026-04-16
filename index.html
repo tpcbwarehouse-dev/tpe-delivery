@@ -400,14 +400,61 @@ textarea{resize:vertical;min-height:68px;}
   width:100%;
   aspect-ratio:4/3;
   object-fit:cover;
+  object-position: center center;
   border-radius:4px;
   border:1px solid #d4bc96;
   display:block;
+  cursor:grab;
+  transition: outline .15s;
+}
+.doc-photos img:active { cursor:grabbing; }
+.doc-photos img.selected-photo {
+  outline: 2px solid #c9841a;
+  outline-offset: 1px;
 }
 /* 1 รูป — สูงขึ้น */
 .doc-photos.cols-1 img { aspect-ratio: 16/9; }
 /* 2 คอลัมน์ — สูงขึ้นหน่อย */
 .doc-photos.cols-2 img { aspect-ratio: 3/2; }
+
+/* photo position toolbar */
+.photo-pos-toolbar {
+  position:fixed;
+  background:rgba(30,20,10,.92);
+  border:1px solid #c9841a;
+  border-radius:10px;
+  padding:8px 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  z-index:500;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+  font-family:'Sarabun',sans-serif;
+  font-size:12px;
+  color:#f5e6c8;
+}
+.photo-pos-toolbar.hidden { display:none; }
+.pos-btn {
+  background:rgba(201,132,26,.2);
+  border:1px solid #c9841a;
+  border-radius:5px;
+  color:#f5e6c8;
+  font-size:14px;
+  width:28px;height:28px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.pos-btn:hover { background:rgba(201,132,26,.4); }
+.pos-close {
+  background:rgba(239,68,68,.2);
+  border:1px solid #ef4444;
+  border-radius:5px;
+  color:#fca5a5;
+  font-size:11px;
+  padding:2px 8px;
+  cursor:pointer;
+  margin-left:4px;
+}
 
 /* FOOTER */
 .doc-footer {
@@ -667,6 +714,43 @@ textarea{resize:vertical;min-height:68px;}
 
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ===== PHOTO POSITION CONTROL ===== */
+.photo-thumb-wrap {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.photo-thumb-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  cursor: ns-resize;
+  user-select: none;
+}
+.photo-thumb-wrap .rm {
+  position: absolute; top: 3px; right: 3px;
+  background: rgba(0,0,0,.7); border: none; border-radius: 50%;
+  width: 20px; height: 20px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; color: #fff; font-size: 10px;
+}
+.photo-thumb-wrap .rm:hover { background: var(--danger); }
+.photo-pos-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.55); padding: 3px 6px;
+  display: flex; align-items: center; gap: 5px;
+  opacity: 0; transition: opacity .2s;
+}
+.photo-thumb-wrap:hover .photo-pos-bar { opacity: 1; }
+.photo-pos-bar input[type=range] {
+  flex: 1; height: 3px; cursor: pointer;
+  background: none; border: none; padding: 0; outline: none;
+}
+.photo-pos-label { font-size: 9px; color: #fff; white-space: nowrap; }
+
 /* ===== ENGINEER PROFILES ===== */
 .eng-selector{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 .eng-avatar{
@@ -824,6 +908,7 @@ textarea{resize:vertical;min-height:68px;}
   <div class="card">
     <div class="card-title">ขอบเขตงาน</div>
     <div class="field"><label>Scope of Work<span class="required-mark">●</span></label><textarea id="scope" placeholder="กรอกขอบเขตงาน"></textarea></div>
+    <div style="margin-top:12px;" class="field"><label>อุปกรณ์ที่เปลี่ยน — Equipment Replaced</label><textarea id="equipment" placeholder="กรอกรายการอุปกรณ์ (ถ้ามี)"></textarea></div>
     <div style="margin-top:14px;">
     <label style="font-size:12px;color:var(--label);font-weight:500;display:block;margin-bottom:8px;">วิศวกรผู้ควบคุม<span class="required-mark">●</span> <span style="font-weight:400;color:var(--muted);">— เลือกหรือเพิ่มใหม่</span></label>
     <div class="eng-selector" id="engSelector"></div>
@@ -855,6 +940,14 @@ textarea{resize:vertical;min-height:68px;}
       </div>
     </div>
   </div>
+  <div class="card">
+    <div class="card-title">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
+    <div class="field">
+      <label>รายการอุปกรณ์ที่เปลี่ยน <span style="color:var(--muted);font-weight:400;">(ถ้ามี)</span></label>
+      <textarea id="equipment" placeholder="เช่น&#10;1.) วาล์วไอน้ำ 2 นิ้ว&#10;2.) ท่อน้ำมัน&#10;3.) ..." style="min-height:90px;"></textarea>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">ข้อมูลหม้อน้ำ</div>
     <div class="optional-label">กรอกถ้ามี — ไม่กรอกใส่ "-" ให้อัตโนมัติ</div>
@@ -894,6 +987,17 @@ textarea{resize:vertical;min-height:68px;}
   </div>
   <div id="histList"></div>
 </div>
+</div>
+
+<!-- Photo position toolbar -->
+<div class="photo-pos-toolbar hidden" id="photoPosToolbar">
+  <span>ปรับตำแหน่งรูป:</span>
+  <button class="pos-btn" onclick="movePhoto('left')" title="ซ้าย">←</button>
+  <button class="pos-btn" onclick="movePhoto('right')" title="ขวา">→</button>
+  <button class="pos-btn" onclick="movePhoto('up')" title="ขึ้น">↑</button>
+  <button class="pos-btn" onclick="movePhoto('down')" title="ลง">↓</button>
+  <button class="pos-btn" onclick="movePhoto('center')" title="กลาง">⊙</button>
+  <button class="pos-close" onclick="closePhotoPos()">✕ ปิด</button>
 </div>
 
 <!-- PRINT PANEL (hidden, used for print) -->
@@ -1015,10 +1119,28 @@ function handleFiles(files) {
 }
 function removePhoto(i) { photos.splice(i,1); renderGrid(); }
 function renderGrid() {
-  document.getElementById('photoGrid').innerHTML = photos.map((p,i) =>
-    `<div class="photo-thumb"><img src="${p.dataUrl}">
-     <button class="rm" onclick="removePhoto(${i})">✕</button></div>`).join('');
+  document.getElementById('photoGrid').innerHTML = photos.map((p,i) => {
+    const pos = p.position || 50;
+    return `<div class="photo-thumb-wrap">
+      <img src="${p.dataUrl}" style="object-position: center ${pos}%"
+           id="photo_img_${i}" title="ลากเพื่อเลื่อนรูปขึ้น-ลง">
+      <button class="rm" onclick="removePhoto(${i})">✕</button>
+      <div class="photo-pos-bar">
+        <span class="photo-pos-label">⬆</span>
+        <input type="range" min="0" max="100" value="${pos}"
+          oninput="setPhotoPos(${i}, this.value)"
+          onclick="event.stopPropagation()">
+        <span class="photo-pos-label">⬇</span>
+      </div>
+    </div>`;
+  }).join('');
   document.getElementById('photoCount').textContent = photos.length ? `${photos.length} รูป` : '';
+}
+
+function setPhotoPos(i, val) {
+  photos[i].position = parseInt(val);
+  const img = document.getElementById('photo_img_' + i);
+  if (img) img.style.objectPosition = 'center ' + val + '%';
 }
 
 // Validate
@@ -1086,7 +1208,7 @@ function buildDocHTML(r) {
       <div class="doc-photos-section${isFirst ? '' : ' doc-photos-next-page'}">
         ${isFirst ? '<div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>' : ''}
         <div class="doc-photos cols-${cols}">
-          ${pagePhotos.map(p => `<img src="${p.dataUrl}" alt="">`).join('')}
+          ${pagePhotos.map(p => `<img src="${p.dataUrl}" alt="" style="object-position: center ${p.position !== undefined ? p.position : 50}%">`).join('')}
         </div>
       </div>`;
     }).join('');
@@ -1171,7 +1293,9 @@ function buildDocHTML(r) {
 
       <div class="doc-equip-section">
         <div class="doc-section-label" style="margin-bottom:6px;">อุปกรณ์ที่เปลี่ยน — Equipment Replaced</div>
-        <div class="doc-equip-lines-wrap">${equipLines}</div>
+        ${r.equipment && r.equipment.trim()
+          ? `<div class="doc-scope-box" style="border-left-color:#8B6530;">${r.equipment.split('\n').map(l => `<div>${l}</div>`).join('')}</div>`
+          : `<div class="doc-equip-lines-wrap">${equipLines}</div>`}
       </div>
 
       <div class="doc-completion" style="margin-top:10px;margin-bottom:0;">
@@ -1244,7 +1368,7 @@ async function generateDoc() {
       boilerType: g('boilerType') || '-', brand: g('brand') || '-',
       capacity: g('capacity') || '-', mfgYear: g('mfgYear') || '-',
       fuel: g('fuel') || '-', workingPressure: g('workingPressure') || '-',
-      scope: g('scope'), engineer: g('engineer') || '',
+      scope: g('scope'), equipment: g('equipment') || '', engineer: g('engineer') || '',
       sigImg: localStorage.getItem('tpe_sig') || SIG_DEFAULT,
       photos: photos.map(p => ({ dataUrl: p.dataUrl }))
     };
@@ -1297,6 +1421,7 @@ function openPreview(record) {
     'SA/' + (record.docNumber || '') + ' — ' + (record.customerName || '');
   document.getElementById('modalBody').innerHTML = '<div class="modal-doc-wrapper">' + buildDocHTML(record) + '</div>';
   document.getElementById('modalOverlay').classList.remove('hidden');
+  setTimeout(initPhotoClicks, 100);
 }
 
 function closeModalOut(e) { if (e.target === document.getElementById('modalOverlay')) closePreview(); }
@@ -1531,6 +1656,61 @@ function getSigName() { return document.getElementById('engineer').value || ''; 
 function showSigPreview() {}
 function clearSig() {}
 
+// ===== PHOTO POSITION =====
+let selectedPhotoEl = null;
+let photoPositions = {}; // key: photo index, value: {x, y} percent
+
+function initPhotoClicks() {
+  // เพิ่ม click listener ให้รูปใน modal
+  const modalBody = document.getElementById('modalBody');
+  if (!modalBody) return;
+  modalBody.querySelectorAll('.doc-photos img').forEach((img, i) => {
+    img.addEventListener('click', e => {
+      e.stopPropagation();
+      // deselect อื่น
+      modalBody.querySelectorAll('.doc-photos img').forEach(el => el.classList.remove('selected-photo'));
+      img.classList.add('selected-photo');
+      selectedPhotoEl = img;
+      // แสดง toolbar ใกล้ๆ รูป
+      const toolbar = document.getElementById('photoPosToolbar');
+      const rect = img.getBoundingClientRect();
+      toolbar.style.top = (rect.top + window.scrollY - 50) + 'px';
+      toolbar.style.left = rect.left + 'px';
+      toolbar.classList.remove('hidden');
+    });
+  });
+}
+
+function movePhoto(dir) {
+  if (!selectedPhotoEl) return;
+  const step = 10;
+  const cur = selectedPhotoEl.style.objectPosition || 'center center';
+  let [x, y] = parsePosition(cur);
+  if (dir === 'left')   x = Math.max(0,   x - step);
+  if (dir === 'right')  x = Math.min(100, x + step);
+  if (dir === 'up')     y = Math.max(0,   y - step);
+  if (dir === 'down')   y = Math.min(100, y + step);
+  if (dir === 'center') { x = 50; y = 50; }
+  selectedPhotoEl.style.objectPosition = x + '% ' + y + '%';
+}
+
+function parsePosition(pos) {
+  const parts = pos.trim().split(/\s+/);
+  const parse = v => {
+    if (v === 'center') return 50;
+    if (v === 'top' || v === 'left') return 0;
+    if (v === 'bottom' || v === 'right') return 100;
+    return parseInt(v) || 50;
+  };
+  return [parse(parts[0] || 'center'), parse(parts[1] || 'center')];
+}
+
+function closePhotoPos() {
+  document.getElementById('photoPosToolbar').classList.add('hidden');
+  if (selectedPhotoEl) selectedPhotoEl.classList.remove('selected-photo');
+  selectedPhotoEl = null;
+}
+
 // ===== AUTOCOMPLETE =====
 let acActiveIdx = -1;
 
@@ -1668,7 +1848,7 @@ function editRecord(id) {
   // โหลดข้อมูลกลับเข้าฟอร์ม
   const fields = ['docNumber','jobNumber','date','jobName','rev',
     'customerCode','customerName','boilerType','brand','capacity',
-    'mfgYear','fuel','workingPressure','scope','engineer'];
+    'mfgYear','fuel','workingPressure','scope','equipment','engineer'];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = r[f] || '';
@@ -1713,9 +1893,9 @@ function copyRecord(id) {
 
 function deleteRecord(id, silent) {
   if (!silent && !confirm('ลบเอกสารนี้?')) return;
-  const updated = JSON.parse(localStorage.getItem('tpe_deliveries_meta')||'[]').filter(r => r.id !== id);
-  try { localStorage.setItem('tpe_deliveries_meta', JSON.stringify(updated)); } catch(e) {}
-  window._allRecords = (window._allRecords || []).filter(r => r.id !== id);
+  window._allRecords = (window._allRecords || []).filter(r => String(r.id) !== String(id));
+  const meta = window._allRecords.map(r => { const m = Object.assign({},r); delete m.photos; delete m.sigImg; return m; });
+  try { localStorage.setItem('tpe_deliveries_meta', JSON.stringify(meta)); } catch(e) {}
   updateBadge(); renderHistory();
   // ลบใน Sheet ด้วย
   fetch(API_URL, {
