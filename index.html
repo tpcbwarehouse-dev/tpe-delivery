@@ -948,8 +948,8 @@ function switchTab(tab) {
 async function loadAndRenderHistory() {
   const list = document.getElementById('histList');
 
-  // แสดง local ก่อน (ไม่รอ)
-  const local = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  // แสดง metadata local ก่อน (ไม่มีรูป แต่เร็ว)
+  const local = JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]');
   window._allRecords = local;
   renderHistory();
 
@@ -965,7 +965,13 @@ async function loadAndRenderHistory() {
     document.getElementById('syncMsg')?.remove();
     if (Array.isArray(records) && records.length >= 0) {
       window._allRecords = records;
-      localStorage.setItem('tpe_deliveries', JSON.stringify(records.slice(0, 300)));
+      // เก็บแค่ metadata (ไม่มีรูป) เพื่อไม่ให้ localStorage เต็ม
+      const meta = records.map(r => {
+        const m = Object.assign({}, r);
+        delete m.photos; delete m.sigImg;
+        return m;
+      });
+      try { localStorage.setItem('tpe_deliveries_meta', JSON.stringify(meta.slice(0,200))); } catch(e) {}
       updateBadge();
       renderHistory();
     }
@@ -1255,10 +1261,13 @@ async function generateDoc() {
       });
     } catch(e) { console.warn('Sheet save failed (will save locally)', e); }
 
-    // Save locally too
-    const local = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
-    local.unshift(record);
-    localStorage.setItem('tpe_deliveries', JSON.stringify(local.slice(0, 200)));
+    // Save metadata (ไม่มีรูป) ลง localStorage
+    const meta = Object.assign({}, record);
+    delete meta.photos;
+    delete meta.sigImg;
+    const localMeta = JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]');
+    localMeta.unshift(meta);
+    try { localStorage.setItem('tpe_deliveries_meta', JSON.stringify(localMeta.slice(0, 200))); } catch(e) {}
     updateBadge();
 
     // Show preview
@@ -1527,7 +1536,7 @@ let acActiveIdx = -1;
 
 function getCustomerHistory() {
   // ดึงรายชื่อลูกค้าที่ไม่ซ้ำจาก localStorage
-  const records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  const records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
   const seen = new Map();
   records.forEach(r => {
     if (r.customerCode && r.customerName) {
@@ -1603,13 +1612,13 @@ document.addEventListener('click', e => {
 });
 
 function updateBadge() {
-  const n = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]').length;
+  const n = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]')).length;
   document.getElementById('histBadge').textContent = n;
 }
 
 function renderHistory() {
   const q = (document.getElementById('histSearch').value || '').toLowerCase();
-  let records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  let records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
   if (q) records = records.filter(r =>
     (r.customerName||'').toLowerCase().includes(q) ||
     (r.docNumber||'').includes(q) ||
@@ -1641,19 +1650,19 @@ function renderHistory() {
 }
 
 function openPreviewById(id) {
-  const r = JSON.parse(localStorage.getItem('tpe_deliveries')||'[]').find(x => x.id === id);
+  const r = (window._allRecords || []).find(x => String(x.id) === String(id));
   if (r) openPreview(r);
 }
 
 function printById(id) {
-  const r = JSON.parse(localStorage.getItem('tpe_deliveries')||'[]').find(x => x.id === id);
+  const r = (window._allRecords || []).find(x => String(x.id) === String(id));
   if (!r) return;
   currentRecord = r;
   printDoc();
 }
 
 function editRecord(id) {
-  const records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  const records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
   const r = records.find(x => x.id === id);
   if (!r) return;
   // โหลดข้อมูลกลับเข้าฟอร์ม
@@ -1682,7 +1691,7 @@ function editRecord(id) {
 }
 
 function copyRecord(id) {
-  const records = JSON.parse(localStorage.getItem('tpe_deliveries') || '[]');
+  const records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
   const r = records.find(x => x.id === id);
   if (!r) return;
   const fields = ['jobNumber','date','jobName','rev',
@@ -1704,8 +1713,8 @@ function copyRecord(id) {
 
 function deleteRecord(id, silent) {
   if (!silent && !confirm('ลบเอกสารนี้?')) return;
-  const updated = JSON.parse(localStorage.getItem('tpe_deliveries')||'[]').filter(r => r.id !== id);
-  localStorage.setItem('tpe_deliveries', JSON.stringify(updated));
+  const updated = JSON.parse(localStorage.getItem('tpe_deliveries_meta')||'[]').filter(r => r.id !== id);
+  try { localStorage.setItem('tpe_deliveries_meta', JSON.stringify(updated)); } catch(e) {}
   window._allRecords = (window._allRecords || []).filter(r => r.id !== id);
   updateBadge(); renderHistory();
   // ลบใน Sheet ด้วย
@@ -1717,8 +1726,9 @@ function deleteRecord(id, silent) {
 }
 
 function clearAll() {
-  if (!confirm('ลบประวัติทั้งหมด?')) return;
-  localStorage.removeItem('tpe_deliveries');
+  if (!confirm('ลบประวัติทั้งหมด? (ข้อมูลใน Sheet ยังอยู่)')) return;
+  localStorage.removeItem('tpe_deliveries_meta');
+  window._allRecords = [];
   updateBadge(); renderHistory();
 }
 </script>
