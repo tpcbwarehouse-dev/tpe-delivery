@@ -388,6 +388,39 @@ textarea{resize:vertical;min-height:68px;}
 /* PHOTOS */
 .doc-photos-section { margin-bottom:14px; }
 .doc-photos-next-page { page-break-before: always; padding-top: 8px; }
+
+/* Photo layout templates */
+.doc-photos { display:grid; gap:5px; }
+.doc-photos.cols-1 { grid-template-columns:1fr; }
+.doc-photos.cols-2 { grid-template-columns:1fr 1fr; }
+.doc-photos.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+.doc-photos.cols-4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+
+/* Template: 1 big + rest small */
+.doc-photos.tpl-hero .hero-photo { grid-column: 1 / -1; }
+.doc-photos.tpl-hero { grid-template-columns: repeat(3, 1fr); }
+
+/* Template: 2 rows big/small */
+.doc-photos.tpl-rows { grid-template-columns: 1fr 1fr; }
+.doc-photos.tpl-rows .big-photo { grid-column: span 2; }
+
+/* photo selector UI */
+.photo-layout-bar {
+  display:flex; gap:6px; align-items:center;
+  margin-bottom:10px; flex-wrap:wrap;
+}
+.layout-btn {
+  padding:5px 10px; border-radius:6px; border:1px solid var(--border);
+  background:var(--surface); color:var(--muted);
+  font-family:'Sarabun',sans-serif; font-size:11px; cursor:pointer;
+  transition:all .15s; display:flex; align-items:center; gap:4px;
+}
+.layout-btn:hover { border-color:var(--accent); color:var(--text); }
+.layout-btn.active { border-color:#c9841a; background:rgba(201,132,26,.15); color:#f5e6c8; }
+.layout-preview {
+  display:grid; gap:1px; width:28px; height:20px; flex-shrink:0;
+}
+.layout-preview span { background:rgba(201,132,26,.5); border-radius:1px; }
 .doc-photos {
   display:grid;
   gap:5px;
@@ -969,6 +1002,29 @@ textarea{resize:vertical;min-height:68px;}
     </div>
     <div class="photo-grid" id="photoGrid"></div>
     <div class="photo-count" id="photoCount"></div>
+    <div class="photo-layout-bar" id="layoutBar" style="display:none;margin-top:10px;">
+      <span style="font-size:11px;color:var(--label);">Layout:</span>
+      <button class="layout-btn active" data-layout="auto" onclick="setLayout('auto')">
+        <svg width="28" height="20" style="display:grid;gap:1px;"><rect x="0" y="0" width="13" height="9" rx="1" fill="rgba(201,132,26,.6)"/><rect x="15" y="0" width="13" height="9" rx="1" fill="rgba(201,132,26,.6)"/><rect x="0" y="11" width="13" height="9" rx="1" fill="rgba(201,132,26,.6)"/><rect x="15" y="11" width="13" height="9" rx="1" fill="rgba(201,132,26,.6)"/></svg>
+        Auto
+      </button>
+      <button class="layout-btn" data-layout="hero" onclick="setLayout('hero')">
+        <svg width="28" height="20"><rect x="0" y="0" width="28" height="10" rx="1" fill="rgba(201,132,26,.6)"/><rect x="0" y="12" width="8" height="8" rx="1" fill="rgba(201,132,26,.6)"/><rect x="10" y="12" width="8" height="8" rx="1" fill="rgba(201,132,26,.6)"/><rect x="20" y="12" width="8" height="8" rx="1" fill="rgba(201,132,26,.6)"/></svg>
+        1+เล็ก
+      </button>
+      <button class="layout-btn" data-layout="rows" onclick="setLayout('rows')">
+        <svg width="28" height="20"><rect x="0" y="0" width="28" height="8" rx="1" fill="rgba(201,132,26,.6)"/><rect x="0" y="10" width="13" height="10" rx="1" fill="rgba(201,132,26,.6)"/><rect x="15" y="10" width="13" height="10" rx="1" fill="rgba(201,132,26,.6)"/></svg>
+        แถว
+      </button>
+      <button class="layout-btn" data-layout="mosaic" onclick="setLayout('mosaic')">
+        <svg width="28" height="20"><rect x="0" y="0" width="16" height="20" rx="1" fill="rgba(201,132,26,.6)"/><rect x="18" y="0" width="10" height="9" rx="1" fill="rgba(201,132,26,.6)"/><rect x="18" y="11" width="10" height="9" rx="1" fill="rgba(201,132,26,.6)"/></svg>
+        Mosaic
+      </button>
+      <button class="layout-btn" data-layout="strip" onclick="setLayout('strip')">
+        <svg width="28" height="20"><rect x="0" y="0" width="5" height="20" rx="1" fill="rgba(201,132,26,.6)"/><rect x="7" y="0" width="5" height="20" rx="1" fill="rgba(201,132,26,.6)"/><rect x="14" y="0" width="5" height="20" rx="1" fill="rgba(201,132,26,.6)"/><rect x="21" y="0" width="7" height="20" rx="1" fill="rgba(201,132,26,.6)"/></svg>
+        Strip
+      </button>
+    </div>
   </div>
   <button class="btn-generate" id="generateBtn" onclick="generateDoc()">
     <span id="btnIcon">📋</span><span id="btnText">ดูตัวอย่างและบันทึก</span>
@@ -1116,6 +1172,15 @@ function handleFiles(files) {
     r.readAsDataURL(f);
   });
 }
+let currentLayout = 'auto';
+
+function setLayout(layout) {
+  currentLayout = layout;
+  document.querySelectorAll('.layout-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.layout === layout);
+  });
+}
+
 function removePhoto(i) { photos.splice(i,1); renderGrid(); }
 function renderGrid() {
   document.getElementById('photoGrid').innerHTML = photos.map((p,i) => {
@@ -1134,6 +1199,7 @@ function renderGrid() {
     </div>`;
   }).join('');
   document.getElementById('photoCount').textContent = photos.length ? `${photos.length} รูป` : '';
+  document.getElementById('layoutBar').style.display = photos.length > 0 ? 'flex' : 'none';
 }
 
 function setPhotoPos(i, val) {
@@ -1190,30 +1256,70 @@ function buildDocHTML(r) {
     return 3;                   // 10-12 รูป — 3 คอลัมน์ 4 แถว (เต็ม A4)
   }
 
-  function buildPhotosHTML(photos) {
+  function getImgTag(p, extraStyle) {
+    const pos = p && p.position !== undefined ? p.position : 50;
+    return `<img src="${p.dataUrl}" style="object-position:center ${pos}%;${extraStyle||''}">`;
+  }
+
+  function buildPhotosHTML(photos, layout) {
     if (!photos || !photos.length) return '';
-    const total = photos.length;
-
-    // แบ่งเป็น chunk ละ 10 รูป (1 หน้า)
+    layout = layout || 'auto';
     const pages = [];
-    for (let i = 0; i < total; i += 12) {
-      pages.push(photos.slice(i, i + 10));
-    }
+    for (let i = 0; i < photos.length; i += 12) pages.push(photos.slice(i, i + 12));
 
-    return pages.map((pagePhotos, pageIdx) => {
-      const cols = getPhotoCols(pagePhotos.length);
+    const BASE = 'width:100%;object-fit:cover;border-radius:4px;border:1px solid #d4bc96;display:block;';
+
+    return pages.map((pg, pageIdx) => {
       const isFirst = pageIdx === 0;
-      return `
-      <div class="doc-photos-section${isFirst ? '' : ' doc-photos-next-page'}">
-        ${isFirst ? '<div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>' : ''}
-        <div class="doc-photos cols-${cols}">
-          ${pagePhotos.map(p => `<img src="${p.dataUrl}" alt="" style="object-position: center ${p.position !== undefined ? p.position : 50}%">`).join('')}
-        </div>
-      </div>`;
+      const label = isFirst ? '<div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>' : '';
+      let grid = '';
+
+      if (layout === 'hero' && pg.length >= 2) {
+        const rest = pg.slice(1);
+        grid = `<div style="display:grid;gap:5px;">
+          <div>${getImgTag(pg[0], BASE+'aspect-ratio:16/7;')}</div>
+          <div style="display:grid;grid-template-columns:repeat(${Math.min(rest.length,4)},1fr);gap:5px;">
+            ${rest.map(p => getImgTag(p, BASE+'aspect-ratio:4/3;')).join('')}
+          </div></div>`;
+
+      } else if (layout === 'mosaic' && pg.length >= 2) {
+        let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">';
+        for (let i = 0; i < pg.length; i += 3) {
+          html += `<div style="grid-row:span 2;">${getImgTag(pg[i], BASE+'height:100%;min-height:150px;')}</div>`;
+          if (pg[i+1]) html += getImgTag(pg[i+1], BASE+'aspect-ratio:4/3;');
+          if (pg[i+2]) html += getImgTag(pg[i+2], BASE+'aspect-ratio:4/3;');
+        }
+        grid = html + '</div>';
+
+      } else if (layout === 'rows' && pg.length >= 3) {
+        const top = pg.slice(0, Math.ceil(pg.length/3));
+        const bot = pg.slice(Math.ceil(pg.length/3));
+        grid = `<div style="display:grid;gap:5px;">
+          <div style="display:grid;grid-template-columns:repeat(${top.length},1fr);gap:5px;">
+            ${top.map(p => getImgTag(p, BASE+'aspect-ratio:3/2;')).join('')}
+          </div>
+          ${bot.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(bot.length,4)},1fr);gap:5px;">
+            ${bot.map(p => getImgTag(p, BASE+'aspect-ratio:4/3;')).join('')}
+          </div>` : ''}
+        </div>`;
+
+      } else if (layout === 'strip') {
+        grid = `<div style="display:grid;grid-template-columns:repeat(${Math.min(pg.length,5)},1fr);gap:5px;">
+          ${pg.map(p => getImgTag(p, BASE+'aspect-ratio:3/4;')).join('')}
+        </div>`;
+
+      } else {
+        const cols = getPhotoCols(pg.length);
+        grid = `<div class="doc-photos cols-${cols}">
+          ${pg.map(p => getImgTag(p, '')).join('')}
+        </div>`;
+      }
+
+      return `<div class="doc-photos-section${isFirst?'':' doc-photos-next-page'}">${label}${grid}</div>`;
     }).join('');
   }
 
-  const photosHTML = buildPhotosHTML(r.photos);
+  const photosHTML = buildPhotosHTML(r.photos, r.photoLayout);
 
   return `
   <div class="doc-page">
@@ -1369,7 +1475,8 @@ async function generateDoc() {
       fuel: g('fuel') || '-', workingPressure: g('workingPressure') || '-',
       scope: g('scope'), equipment: g('equipment') || '', engineer: g('engineer') || '',
       sigImg: localStorage.getItem('tpe_sig') || SIG_DEFAULT,
-      photos: photos.map(p => ({ dataUrl: p.dataUrl }))
+      photoLayout: currentLayout,
+      photos: photos.map(p => ({ dataUrl: p.dataUrl, position: p.position }))
     };
 
     // engineer ถูก set ผ่าน profile selector แล้ว
@@ -1859,7 +1966,8 @@ function loadRecordToForm(r) {
     const el = document.getElementById(f);
     if (el) el.value = r[f] || '';
   });
-  photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl }));
+  photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl, position: p.position }));
+  if (r.photoLayout) { currentLayout = r.photoLayout; setLayout(r.photoLayout); }
   renderGrid();
   if (r.engineer) {
     const engs = getEngineers();
