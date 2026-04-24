@@ -1023,6 +1023,7 @@ textarea{resize:vertical;min-height:68px;}
           <option value="draft">📝 ร่าง (ยังไม่วางบิล)</option>
           <option value="bill1">🟡 วางบิลงวด 1</option>
           <option value="bill2">🔵 วางบิลงวด 2</option>
+          <option value="bill3">🔵 วางบิลงวด 3</option>
           <option value="complete">✅ ครบแล้ว</option>
         </select>
       </div>
@@ -1030,11 +1031,15 @@ textarea{resize:vertical;min-height:68px;}
         <label>% งวด 1 <span id="pct2Label" style="color:var(--muted);">(งวด 2: 40%)</span></label>
         <select id="billPct1" onchange="updatePct2Label()" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:15px;padding:9px 11px;outline:none;width:100%;">
           <option value="100">100% (งวดเดียว)</option>
-          <option value="60" selected>60%</option>
+          <option value="90" selected>90%</option>
+          <option value="80">80%</option>
           <option value="70">70%</option>
+          <option value="60">60%</option>
           <option value="50">50%</option>
           <option value="40">40%</option>
           <option value="30">30%</option>
+          <option value="20">20%</option>
+          <option value="10">10%</option>
         </select>
       </div>
     </div>
@@ -1113,6 +1118,7 @@ textarea{resize:vertical;min-height:68px;}
     <button class="filter-chip" data-filter="draft" onclick="setBillFilter('draft')">📝 ร่าง</button>
     <button class="filter-chip" data-filter="bill1" onclick="setBillFilter('bill1')">🟡 งวด 1</button>
     <button class="filter-chip" data-filter="bill2" onclick="setBillFilter('bill2')">🔵 งวด 2</button>
+    <button class="filter-chip" data-filter="bill2" onclick="setBillFilter('bill3')">🔵 งวด 3</button>
     <button class="filter-chip" data-filter="complete" onclick="setBillFilter('complete')">✅ ครบแล้ว</button>
   </div>
   <div id="billList"></div>
