@@ -1367,7 +1367,7 @@ updateBillBadge();
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const tabMap = { form: 0, history: 1, billing: 2, dashboard: 3 };
+  const tabMap = { form: 0, billing: 1, history: 2, dashboard: 3 };
   const tabs = document.querySelectorAll('.tab');
   if (tabs[tabMap[tab]] !== undefined) tabs[tabMap[tab]].classList.add('active');
   const panelMap = { form:'panelForm', history:'panelHistory', billing:'panelBilling', dashboard:'panelDashboard' };
@@ -1871,7 +1871,7 @@ ${getDocStyles()}
 </style>
 </head><body>
 ${html}
-<script>
+<scr"+"ipt>
   window.onload = function() {
     setTimeout(function() { window.print(); }, 400);
     window.onafterprint = function() {
@@ -2701,3 +2701,113 @@ function closeCustModalBtn() { document.getElementById('custModal').classList.ad
 // Legacy functions (compat)
 function renderBillingList() { renderBillingTable(); }
 function renderBillingSummary() { renderBillingSummaryKPI(); }
+
+
+
+// ===== MISSING FUNCTIONS (restored) =====
+
+function updateBadge() {
+  const n = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]')).length;
+  document.getElementById('histBadge').textContent = n;
+}
+
+function loadRecordToForm(r) {
+  const fields = ['docNumber','jobNumber','date','jobName','rev',
+    'customerCode','customerName','boilerType','brand','capacity',
+    'mfgYear','fuel','workingPressure','scope','equipment','engineer'];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = r[f] || '';
+  });
+  photos = (r.photos || []).map(p => ({ dataUrl: p.dataUrl, position: p.position }));
+  if (r.photoLayout) { currentLayout = r.photoLayout; setLayout(r.photoLayout); }
+  renderGrid();
+  if (r.engineer) {
+    const engs = getEngineers();
+    const match = engs.find(e => e.name === r.engineer);
+    if (match) selectEngineer(match.id);
+    else document.getElementById('engineer').value = r.engineer;
+  }
+  const billingForRecord = getBillingData()[String(r.id)] || r.billing || { status:'draft', pct1:60 };
+  setBillingToForm(billingForRecord);
+}
+
+function editRecord(id) {
+  const r = (window._allRecords || []).find(x => String(x.id) === String(id));
+  if (!r) { alert('ไม่พบข้อมูล กรุณาเปิดแท็บประวัติใหม่อีกครั้ง'); return; }
+  loadRecordToForm(r);
+  window._editingId = String(id);
+  switchTab('form');
+  document.getElementById('statusMsg').textContent = '✏️ โหลดข้อมูลแล้ว — แก้ไขแล้วกดสร้างใหม่';
+  document.getElementById('statusMsg').className = 'status-msg success';
+}
+
+function copyRecord(id) {
+  const r = (window._allRecords || []).find(x => String(x.id) === String(id));
+  if (!r) { alert('ไม่พบข้อมูล กรุณาเปิดแท็บประวัติใหม่อีกครั้ง'); return; }
+  loadRecordToForm(r);
+  document.getElementById('docNumber').value = '';
+  window._editingId = null;
+  switchTab('form');
+  document.getElementById('statusMsg').textContent = '📋 คัดลอกแล้ว — กรอกเลขที่เอกสารใหม่แล้วกดสร้าง';
+  document.getElementById('statusMsg').className = 'status-msg success';
+}
+
+async function openPreviewById(id) {
+  let r = (window._allRecords || []).find(x => String(x.id) === String(id));
+  if (API_URL && !API_URL.includes('YOUR_APPS')) {
+    try {
+      const res = await fetch(API_URL);
+      const full = await res.json();
+      if (Array.isArray(full)) {
+        const found = full.find(x => String(x.id) === String(id));
+        if (found) {
+          r = found;
+          const idx = (window._allRecords||[]).findIndex(x => String(x.id) === String(id));
+          if (idx >= 0) window._allRecords[idx] = found;
+        }
+      }
+    } catch(e) { console.warn('fetch full record failed:', e); }
+  }
+  if (r) openPreview(r);
+}
+
+function deleteRecord(id, silent) {
+  if (!silent && !confirm('ลบเอกสารนี้?')) return;
+  const updated = (window._allRecords||[]).filter(r => String(r.id) !== String(id));
+  window._allRecords = updated;
+  const meta = updated.map(r => { const m = Object.assign({}, r); delete m.photos; delete m.sigImg; return m; });
+  try { localStorage.setItem('tpe_deliveries_meta', JSON.stringify(meta.slice(0,200))); } catch(e) {}
+  updateBadge();
+  updateBillBadge();
+  renderHistory();
+  if (API_URL && !API_URL.includes('YOUR_APPS')) {
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id: id }),
+      headers: { 'Content-Type': 'text/plain' }
+    }).catch(e => console.warn('Delete sync failed:', e));
+  }
+}
+
+function clearAll() {
+  if (!confirm('ลบประวัติทั้งหมด? (ข้อมูลใน Sheet ยังอยู่)')) return;
+  localStorage.removeItem('tpe_deliveries_meta');
+  window._allRecords = [];
+  updateBadge();
+  renderHistory();
+}
+
+async function printById(id) {
+  await openPreviewById(id);
+  if (currentRecord) printDoc();
+}
+
+function openPreviewById_simple(id) {
+  const r = (window._allRecords||[]).find(x => String(x.id) === String(id));
+  if (r) openPreview(r);
+}
+
+</script>
+</body>
+</html>
