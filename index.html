@@ -1608,6 +1608,79 @@ function formatDate(d) {
   return String(d);
 }
 
+// ===== PHOTO HELPERS (global) =====
+function getPhotoCols(n) {
+  if (n === 1) return 1;
+  if (n === 2) return 2;
+  if (n <= 4) return 2;
+  if (n <= 6) return 3;
+  if (n <= 9) return 3;
+  return 3;
+}
+
+function getImgTag(p, extraStyle) {
+  const pos = p && p.position !== undefined ? p.position : 50;
+  return '<img src="' + p.dataUrl + '" style="object-position:center ' + pos + '%;' + (extraStyle||'') + '">';
+}
+
+function buildPhotosHTML(photos, layout) {
+if (!photos || !photos.length) return '';
+layout = layout || 'auto';
+const pages = [];
+for (let i = 0; i < photos.length; i += 12) pages.push(photos.slice(i, i + 12));
+
+const BASE = 'width:100%;object-fit:cover;border-radius:4px;border:1px solid #d4bc96;display:block;';
+
+return pages.map((pg, pageIdx) => {
+  const isFirst = pageIdx === 0;
+  const label = isFirst ? '<div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>' : '';
+  let grid = '';
+
+  if (layout === 'hero' && pg.length >= 2) {
+    const rest = pg.slice(1);
+    grid = `<div style="display:grid;gap:5px;">
+      <div>${getImgTag(pg[0], BASE+'aspect-ratio:16/7;')}</div>
+      <div style="display:grid;grid-template-columns:repeat(${Math.min(rest.length,4)},1fr);gap:5px;">
+        ${rest.map(p => getImgTag(p, BASE+'aspect-ratio:4/3;')).join('')}
+      </div></div>`;
+
+  } else if (layout === 'mosaic' && pg.length >= 2) {
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">';
+    for (let i = 0; i < pg.length; i += 3) {
+      html += `<div style="grid-row:span 2;">${getImgTag(pg[i], BASE+'height:100%;min-height:150px;')}</div>`;
+      if (pg[i+1]) html += getImgTag(pg[i+1], BASE+'aspect-ratio:4/3;');
+      if (pg[i+2]) html += getImgTag(pg[i+2], BASE+'aspect-ratio:4/3;');
+    }
+    grid = html + '</div>';
+
+  } else if (layout === 'rows' && pg.length >= 3) {
+    const top = pg.slice(0, Math.ceil(pg.length/3));
+    const bot = pg.slice(Math.ceil(pg.length/3));
+    grid = `<div style="display:grid;gap:5px;">
+      <div style="display:grid;grid-template-columns:repeat(${top.length},1fr);gap:5px;">
+        ${top.map(p => getImgTag(p, BASE+'aspect-ratio:3/2;')).join('')}
+      </div>
+      ${bot.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(bot.length,4)},1fr);gap:5px;">
+        ${bot.map(p => getImgTag(p, BASE+'aspect-ratio:4/3;')).join('')}
+      </div>` : ''}
+    </div>`;
+
+  } else if (layout === 'strip') {
+    grid = `<div style="display:grid;grid-template-columns:repeat(${Math.min(pg.length,5)},1fr);gap:5px;">
+      ${pg.map(p => getImgTag(p, BASE+'aspect-ratio:3/4;')).join('')}
+    </div>`;
+
+  } else {
+    const cols = getPhotoCols(pg.length);
+    grid = `<div class="doc-photos cols-${cols}">
+      ${pg.map(p => getImgTag(p, '')).join('')}
+    </div>`;
+  }
+
+  return `<div class="doc-photos-section${isFirst?'':' doc-photos-next-page'}">${label}${grid}</div>`;
+}).join('');
+}
+
 // Build HTML document — TPE Brown Corporate
 function buildDocHTML(r) {
   const yr = new Date(r.createdAt || Date.now()).getFullYear();
@@ -1620,77 +1693,10 @@ function buildDocHTML(r) {
   const equipLines = Array(5).fill('<div class="doc-equip-line"></div>').join('');
 
   // คำนวณ grid columns ตามจำนวนรูป
-  function getPhotoCols(n) {
-    if (n === 1) return 1;      // 1 รูป — เต็มความกว้าง
-    if (n === 2) return 2;      // 2 รูป — 2 คอลัมน์ สูง
-    if (n <= 4) return 2;       // 3-4 รูป — 2 คอลัมน์ 2 แถว
-    if (n <= 6) return 3;       // 5-6 รูป — 3 คอลัมน์ 2 แถว
-    if (n <= 9) return 3;       // 7-9 รูป — 3 คอลัมน์ 3 แถว
-    return 3;                   // 10-12 รูป — 3 คอลัมน์ 4 แถว (เต็ม A4)
-  }
+  // getPhotoCols/getImgTag/buildPhotosHTML are global
 
-  function getImgTag(p, extraStyle) {
-    const pos = p && p.position !== undefined ? p.position : 50;
-    return `<img src="${p.dataUrl}" style="object-position:center ${pos}%;${extraStyle||''}">`;
-  }
+  // buildPhotosHTML is global
 
-  function buildPhotosHTML(photos, layout) {
-    if (!photos || !photos.length) return '';
-    layout = layout || 'auto';
-    const pages = [];
-    for (let i = 0; i < photos.length; i += 12) pages.push(photos.slice(i, i + 12));
-
-    const BASE = 'width:100%;object-fit:cover;border-radius:4px;border:1px solid #d4bc96;display:block;';
-
-    return pages.map((pg, pageIdx) => {
-      const isFirst = pageIdx === 0;
-      const label = isFirst ? '<div class="doc-section-label" style="margin-bottom:8px;">รูปภาพประกอบงาน — Site Photos</div>' : '';
-      let grid = '';
-
-      if (layout === 'hero' && pg.length >= 2) {
-        const rest = pg.slice(1);
-        grid = `<div style="display:grid;gap:5px;">
-          <div>${getImgTag(pg[0], BASE+'aspect-ratio:16/7;')}</div>
-          <div style="display:grid;grid-template-columns:repeat(${Math.min(rest.length,4)},1fr);gap:5px;">
-            ${rest.map(p => getImgTag(p, BASE+'aspect-ratio:4/3;')).join('')}
-          </div></div>`;
-
-      } else if (layout === 'mosaic' && pg.length >= 2) {
-        let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">';
-        for (let i = 0; i < pg.length; i += 3) {
-          html += `<div style="grid-row:span 2;">${getImgTag(pg[i], BASE+'height:100%;min-height:150px;')}</div>`;
-          if (pg[i+1]) html += getImgTag(pg[i+1], BASE+'aspect-ratio:4/3;');
-          if (pg[i+2]) html += getImgTag(pg[i+2], BASE+'aspect-ratio:4/3;');
-        }
-        grid = html + '</div>';
-
-      } else if (layout === 'rows' && pg.length >= 3) {
-        const top = pg.slice(0, Math.ceil(pg.length/3));
-        const bot = pg.slice(Math.ceil(pg.length/3));
-        grid = `<div style="display:grid;gap:5px;">
-          <div style="display:grid;grid-template-columns:repeat(${top.length},1fr);gap:5px;">
-            ${top.map(p => getImgTag(p, BASE+'aspect-ratio:3/2;')).join('')}
-          </div>
-          ${bot.length ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(bot.length,4)},1fr);gap:5px;">
-            ${bot.map(p => getImgTag(p, BASE+'aspect-ratio:4/3;')).join('')}
-          </div>` : ''}
-        </div>`;
-
-      } else if (layout === 'strip') {
-        grid = `<div style="display:grid;grid-template-columns:repeat(${Math.min(pg.length,5)},1fr);gap:5px;">
-          ${pg.map(p => getImgTag(p, BASE+'aspect-ratio:3/4;')).join('')}
-        </div>`;
-
-      } else {
-        const cols = getPhotoCols(pg.length);
-        grid = `<div class="doc-photos cols-${cols}">
-          ${pg.map(p => getImgTag(p, '')).join('')}
-        </div>`;
-      }
-
-      return `<div class="doc-photos-section${isFirst?'':' doc-photos-next-page'}">${label}${grid}</div>`;
-    }).join('');
-  }
 
   const photosHTML = buildPhotosHTML(r.photos, r.photoLayout);
 
