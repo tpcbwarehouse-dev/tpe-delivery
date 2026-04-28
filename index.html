@@ -1386,18 +1386,17 @@ function switchTab(tab) {
 async function loadAndRenderHistory() {
   const list = document.getElementById('histList');
 
-  // ถ้ามี _allRecords อยู่แล้ว (โหลดจากแท็บอื่น) ใช้เลย
+  // แสดงข้อมูลที่มีก่อนเสมอ (เร็ว)
   if (window._allRecords && window._allRecords.length > 0) {
     renderHistory();
     updateBadge();
   } else {
-    // โหลดจาก localStorage ก่อน
     const local = JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]');
-    window._allRecords = local;
-    renderHistory();
+    if (local.length) { window._allRecords = local; renderHistory(); }
+    else { list.innerHTML = '<div class="hist-empty"><div class="e-icon">⏳</div><div>กำลังโหลด...</div></div>'; }
   }
 
-  // ถ้าไม่มี API ก็จบแค่นี้
+  // ดึงจาก Sheet เสมอ (sync ข้อมูลล่าสุด)
   if (!API_URL || API_URL.includes('YOUR_APPS')) return;
 
   // ดึงจาก Sheet
