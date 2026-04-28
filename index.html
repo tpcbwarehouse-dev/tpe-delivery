@@ -1936,6 +1936,10 @@ function printDoc() {
   // เปิด popup window สะอาด ไม่มี browser header/footer
   const recordId = currentRecord ? String(currentRecord.id) : '';
   const win = window.open('', '_blank', 'width=900,height=1100');
+  if (!win) {
+    alert('กรุณาอนุญาต Popup สำหรับเว็บนี้\nSettings → Allow pop-ups for tpcbwarehouse-dev.github.io');
+    return;
+  }
   win.name = recordId;
   win.document.write(`<!DOCTYPE html>
 <html><head>
