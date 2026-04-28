@@ -1286,6 +1286,61 @@ textarea{resize:vertical;min-height:68px;}
 </div>
 
 <!-- DASHBOARD PANEL -->
+<div class="panel" id="panelBilling">
+<div class="container" style="max-width:960px;">
+
+  <!-- Summary KPIs -->
+  <div class="bt-summary" id="btSummary"></div>
+
+  <!-- Filter + Search -->
+  <div class="bt-filter-row">
+    <input class="bt-search" id="btSearch" placeholder="🔍 ค้นหาบริษัท, เลขงาน..." oninput="renderBillingTable()">
+    <button class="filter-chip active" data-filter="all"      onclick="setBillFilter('all')">ทั้งหมด</button>
+    <button class="filter-chip" data-filter="draft"    onclick="setBillFilter('draft')">📝 ร่าง</button>
+    <button class="filter-chip" data-filter="bill1"    onclick="setBillFilter('bill1')">🟡 งวด 1</button>
+    <button class="filter-chip" data-filter="bill2"    onclick="setBillFilter('bill2')">🔵 งวด 2</button>
+    <button class="filter-chip" data-filter="bill3"    onclick="setBillFilter('bill3')">🟣 งวด 3</button>
+    <button class="filter-chip" data-filter="complete" onclick="setBillFilter('complete')">✅ ครบ</button>
+    <button class="filter-chip" data-filter="unprinted" onclick="setBillFilter('unprinted')">🖨 ยังไม่พิมพ์</button>
+  </div>
+
+  <!-- Table -->
+  <div class="bt-table-wrap">
+    <table class="bt-table">
+      <thead>
+        <tr>
+          <th style="width:120px;">เลขที่</th>
+          <th>บริษัท / งาน</th>
+          <th style="width:100px;">วันที่</th>
+          <th style="width:150px;">สถานะวางบิล</th>
+          <th style="width:110px;">สถานะพิมพ์</th>
+          <th style="width:130px;">การดำเนินการ</th>
+        </tr>
+      </thead>
+      <tbody id="btTableBody">
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">⏳ กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- Company Detail Modal -->
+<div class="cust-modal-overlay hidden" id="custModal" onclick="closeCustModal(event)">
+  <div class="cust-modal" id="custModalBox">
+    <div class="cust-modal-header">
+      <div>
+        <div class="cust-modal-name" id="custModalName">—</div>
+        <div class="cust-modal-code" id="custModalCode">—</div>
+      </div>
+      <button class="cust-modal-close" onclick="closeCustModalBtn()">✕ ปิด</button>
+    </div>
+    <div class="cust-modal-stats" id="custModalStats"></div>
+    <div class="cust-jobs-list" id="custModalJobs"></div>
+  </div>
+</div>
+
 <div class="panel" id="panelDashboard">
 <div style="max-width:980px;margin:0 auto;padding:20px 16px;">
 
