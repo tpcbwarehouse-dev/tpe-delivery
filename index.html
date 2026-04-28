@@ -1561,6 +1561,19 @@ function validate() {
   return true;
 }
 
+// Global date formatter
+function formatDate(d) {
+  if (!d) return '';
+  if (String(d).includes('T') || (String(d).includes('-') && String(d).length > 10)) {
+    const dt = new Date(d);
+    if (isNaN(dt)) return String(d);
+    return String(dt.getDate()).padStart(2,'0') + '/' +
+           String(dt.getMonth()+1).padStart(2,'0') + '/' +
+           dt.getFullYear();
+  }
+  return String(d);
+}
+
 // Build HTML document — TPE Brown Corporate
 function buildDocHTML(r) {
   const yr = new Date(r.createdAt || Date.now()).getFullYear();
@@ -1569,19 +1582,6 @@ function buildDocHTML(r) {
   const sigSrc = r.sigImg || getSig();
   const docNum = r.docNumber || '';
 
-  // format วันที่ — รองรับทั้ง dd/mm/yyyy และ ISO string
-  function formatDate(d) {
-    if (!d) return '';
-    // ถ้าเป็น ISO string (มี T หรือ -)
-    if (d.includes('T') || (d.includes('-') && d.length > 10)) {
-      const dt = new Date(d);
-      if (isNaN(dt)) return d;
-      return String(dt.getDate()).padStart(2,'0') + '/' +
-             String(dt.getMonth()+1).padStart(2,'0') + '/' +
-             dt.getFullYear();
-    }
-    return d;
-  }
   const displayDate = formatDate(r.date);
   const equipLines = Array(5).fill('<div class="doc-equip-line"></div>').join('');
 
