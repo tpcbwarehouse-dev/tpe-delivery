@@ -1287,34 +1287,39 @@ textarea{resize:vertical;min-height:68px;}
 
 <!-- DASHBOARD PANEL -->
 <div class="panel" id="panelDashboard">
-<div class="container" style="max-width:960px;">
-  <div class="dash-grid" id="dashKPIs"></div>
-  <div class="dash-two-col">
-    <div class="dash-section" id="dashBillingSection"></div>
-    <div class="dash-section" id="dashPrintSection"></div>
+<div style="max-width:980px;margin:0 auto;padding:20px 16px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div>
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;">ภาพรวมระบบ</div>
+      <div style="font-size:22px;font-weight:700;color:var(--text);">ใบส่งมอบงาน</div>
+    </div>
+    <button onclick="loadAndRenderDashboard()" style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'Sarabun',sans-serif;font-size:13px;padding:8px 14px;cursor:pointer;">↻ รีเฟรช</button>
   </div>
-  <div class="dash-section dash-full" id="dashMonthSection"></div>
-  <div class="dash-two-col">
-    <div class="dash-section" id="dashTopCust"></div>
-    <div class="dash-section" id="dashUnpaid"></div>
+
+  <!-- KPI Row -->
+  <div id="dashKPIs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;"></div>
+
+  <!-- Row 2: Billing donut + Print ratio -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+    <div id="dashBillingSection" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;"></div>
+    <div id="dashPrintSection" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;"></div>
   </div>
+
+  <!-- Row 3: Monthly bar chart full width -->
+  <div id="dashMonthSection" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;"></div>
+
+  <!-- Row 4: Top customers + Unpaid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div id="dashTopCust" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;"></div>
+    <div id="dashUnpaid" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;"></div>
+  </div>
+
 </div>
 </div>
 
-<div class="panel" id="panelBilling">
-<div class="container">
-  <div class="bill-summary" id="billSummary"></div>
-  <div class="bill-filter-bar">
-    <button class="filter-chip active" data-filter="all" onclick="setBillFilter('all')">ทั้งหมด</button>
-    <button class="filter-chip" data-filter="draft" onclick="setBillFilter('draft')">📝 ร่าง</button>
-    <button class="filter-chip" data-filter="bill1" onclick="setBillFilter('bill1')">🟡 งวด 1</button>
-    <button class="filter-chip" data-filter="bill2" onclick="setBillFilter('bill2')">🔵 งวด 2</button>
-    <button class="filter-chip" data-filter="bill3" onclick="setBillFilter('bill3')">🟣 งวด 3</button>
-    <button class="filter-chip" data-filter="complete" onclick="setBillFilter('complete')">✅ ครบแล้ว</button>
-  </div>
-  <div id="billList"></div>
-</div>
-</div>
+
 
 <!-- Photo position toolbar -->
 <div class="photo-pos-toolbar hidden" id="photoPosToolbar">
@@ -1381,10 +1386,16 @@ function switchTab(tab) {
 async function loadAndRenderHistory() {
   const list = document.getElementById('histList');
 
-  // แสดง metadata local ก่อน (ไม่มีรูป แต่เร็ว)
-  const local = JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]');
-  window._allRecords = local;
-  renderHistory();
+  // ถ้ามี _allRecords อยู่แล้ว (โหลดจากแท็บอื่น) ใช้เลย
+  if (window._allRecords && window._allRecords.length > 0) {
+    renderHistory();
+    updateBadge();
+  } else {
+    // โหลดจาก localStorage ก่อน
+    const local = JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]');
+    window._allRecords = local;
+    renderHistory();
+  }
 
   // ถ้าไม่มี API ก็จบแค่นี้
   if (!API_URL || API_URL.includes('YOUR_APPS')) return;
@@ -2119,14 +2130,27 @@ function closePhotoPos() {
 
 // ===== DASHBOARD =====
 async function loadAndRenderDashboard() {
-  // ใช้ data ที่มีอยู่ หรือโหลดใหม่
-  if (!window._allRecords || window._allRecords.length === 0) {
-    try {
-      const res = await fetch(API_URL + '?lite=1');
-      const records = await res.json();
-      if (Array.isArray(records)) window._allRecords = records;
-    } catch(e) {}
-  }
+  // ดึงใหม่เสมอ เพื่อให้ billing status up-to-date
+  try {
+    const res = await fetch(API_URL + '?lite=1');
+    const records = await res.json();
+    if (Array.isArray(records)) {
+      window._allRecords = records;
+      // merge billing จาก Sheet
+      const billing = getBillingData();
+      records.forEach(r => {
+        if (r.billing) {
+          const id = String(r.id);
+          if (!billing[id]) billing[id] = r.billing;
+          else if (!billing[id].printedAt && r.billing.printedAt)
+            billing[id].printedAt = r.billing.printedAt;
+          if (r.billing.status && r.billing.status !== 'draft')
+            billing[id].status = r.billing.status;
+        }
+      });
+      saveBillingData(billing);
+    }
+  } catch(e) { console.warn('Dashboard load failed:', e); }
   renderDashboard(window._allRecords || []);
 }
 
@@ -2135,182 +2159,209 @@ function renderDashboard(records) {
 
   // merge billing จาก records
   records.forEach(r => {
-    if (r.billing && r.billing.status && !billing[String(r.id)]) {
-      billing[String(r.id)] = r.billing;
+    if (r.billing) {
+      const id = String(r.id);
+      if (!billing[id]) billing[id] = r.billing;
+      else {
+        if (r.billing.status && r.billing.status !== 'draft') billing[id].status = r.billing.status;
+        if (!billing[id].printedAt && r.billing.printedAt) billing[id].printedAt = r.billing.printedAt;
+        if (!billing[id].pct1 && r.billing.pct1) billing[id].pct1 = r.billing.pct1;
+      }
     }
   });
+  saveBillingData(billing);
 
   const total = records.length;
   const counts = { draft:0, bill1:0, bill2:0, bill3:0, complete:0 };
-  let printed = 0, unprinted = 0;
-
+  let printed = 0;
   records.forEach(r => {
     const b = billing[String(r.id)] || { status:'draft' };
     counts[b.status] = (counts[b.status]||0) + 1;
-    if (b.printedAt) printed++; else unprinted++;
+    if (b.printedAt) printed++;
   });
+  const pending   = counts.draft + counts.bill1 + counts.bill2 + counts.bill3;
+  const unprinted = total - printed;
+  const printPct  = total > 0 ? Math.round(printed/total*100) : 0;
 
-  const pending = counts.draft + counts.bill1 + counts.bill2 + counts.bill3;
+  if (!total) {
+    ['dashKPIs','dashBillingSection','dashPrintSection','dashMonthSection','dashTopCust','dashUnpaid'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center;">ไม่มีข้อมูล</div>';
+    });
+    return;
+  }
 
   // ===== KPI Cards =====
+  const kpiStyle = (color) => `background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;`;
+  const barStyle = (color) => `position:absolute;top:0;left:0;right:0;height:3px;background:${color};`;
   document.getElementById('dashKPIs').innerHTML = `
-    <div class="kpi-card kpi-blue">
-      <div class="kpi-icon">📋</div>
-      <div class="kpi-label">ใบงานทั้งหมด</div>
-      <div class="kpi-value">${total}</div>
-      <div class="kpi-sub">ทุกสถานะ</div>
+    <div style="${kpiStyle()}">
+      <div style="${barStyle('linear-gradient(90deg,#3b82f6,#6366f1)')}"></div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">ใบงานทั้งหมด</div>
+      <div style="font-size:32px;font-weight:700;color:var(--text);line-height:1;">${total}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;">ทุกสถานะ</div>
+      <div style="position:absolute;bottom:14px;right:16px;font-size:26px;opacity:.15;">📋</div>
     </div>
-    <div class="kpi-card kpi-green">
-      <div class="kpi-icon">✅</div>
-      <div class="kpi-label">วางบิลครบแล้ว</div>
-      <div class="kpi-value">${counts.complete}</div>
-      <div class="kpi-sub">${total > 0 ? Math.round(counts.complete/total*100) : 0}% ของทั้งหมด</div>
+    <div style="${kpiStyle()}">
+      <div style="${barStyle('linear-gradient(90deg,#10b981,#059669)')}"></div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">วางบิลครบแล้ว</div>
+      <div style="font-size:32px;font-weight:700;color:#10b981;line-height:1;">${counts.complete}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;">${total>0?Math.round(counts.complete/total*100):0}% ของทั้งหมด</div>
+      <div style="position:absolute;bottom:14px;right:16px;font-size:26px;opacity:.15;">✅</div>
     </div>
-    <div class="kpi-card kpi-orange">
-      <div class="kpi-icon">⏳</div>
-      <div class="kpi-label">รอวางบิล</div>
-      <div class="kpi-value">${pending}</div>
-      <div class="kpi-sub">ยังไม่ครบ</div>
+    <div style="${kpiStyle()}">
+      <div style="${barStyle('linear-gradient(90deg,#f59e0b,#d97706)')}"></div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">รอวางบิล</div>
+      <div style="font-size:32px;font-weight:700;color:#f59e0b;line-height:1;">${pending}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;">ยังไม่ครบ</div>
+      <div style="position:absolute;bottom:14px;right:16px;font-size:26px;opacity:.15;">⏳</div>
     </div>
-    <div class="kpi-card kpi-purple">
-      <div class="kpi-icon">🖨</div>
-      <div class="kpi-label">พิมพ์แล้ว</div>
-      <div class="kpi-value">${printed}</div>
-      <div class="kpi-sub">จาก ${total} ใบ</div>
+    <div style="${kpiStyle()}">
+      <div style="${barStyle('linear-gradient(90deg,#8b5cf6,#6366f1)')}"></div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;">ยังไม่พิมพ์</div>
+      <div style="font-size:32px;font-weight:700;color:${unprinted>0?'#ef4444':'#10b981'};line-height:1;">${unprinted}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;">จาก ${total} ใบ</div>
+      <div style="position:absolute;bottom:14px;right:16px;font-size:26px;opacity:.15;">🖨</div>
     </div>`;
 
-  // ===== Billing donut (SVG) =====
-  const donutColors = { draft:'#94a3b8', bill1:'#f59e0b', bill2:'#3b82f6', bill3:'#a855f7', complete:'#10b981' };
-  const donutLabels = { draft:'ร่าง', bill1:'งวด 1', bill2:'งวด 2', bill3:'งวด 3', complete:'ครบแล้ว' };
-  const donutData = Object.entries(counts).filter(([,v]) => v > 0);
-  const cx=55, cy=55, r=40, stroke=14;
-  let offset = -Math.PI/2;
-  let arcs = '';
-  donutData.forEach(([k, v]) => {
-    const angle = (v / total) * Math.PI * 2;
-    const x1 = cx + r * Math.cos(offset);
-    const y1 = cy + r * Math.sin(offset);
-    const x2 = cx + r * Math.cos(offset + angle);
-    const y2 = cy + r * Math.sin(offset + angle);
-    const lg = angle > Math.PI ? 1 : 0;
-    arcs += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2} Z" fill="${donutColors[k]}" opacity="0.85"/>`;
+  // ===== Billing donut =====
+  const COLORS = { draft:'#94a3b8', bill1:'#f59e0b', bill2:'#3b82f6', bill3:'#8b5cf6', complete:'#10b981' };
+  const LABELS = { draft:'📝 ร่าง', bill1:'🟡 งวด 1', bill2:'🔵 งวด 2', bill3:'🟣 งวด 3', complete:'✅ ครบ' };
+  let offset = -Math.PI/2, arcs = '';
+  Object.entries(counts).forEach(([k,v]) => {
+    if (!v) return;
+    const angle = (v/total)*Math.PI*2;
+    const x1=55+40*Math.cos(offset), y1=55+40*Math.sin(offset);
+    const x2=55+40*Math.cos(offset+angle), y2=55+40*Math.sin(offset+angle);
+    arcs += `<path d="M55,55 L${x1},${y1} A40,40,0,${angle>Math.PI?1:0},1,${x2},${y2}Z" fill="${COLORS[k]}" opacity="0.9"/>`;
     offset += angle;
   });
-  const legendHtml = Object.entries(counts).map(([k,v]) => v > 0 ? `
-    <div class="legend-row">
-      <div class="legend-dot" style="background:${donutColors[k]}"></div>
-      <div class="legend-label">${donutLabels[k]}</div>
-      <div class="legend-count">${v}</div>
-    </div>` : '').join('');
-
+  const legend = Object.entries(counts).filter(([,v])=>v>0).map(([k,v])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[k]};flex-shrink:0;"></div>
+      <div style="font-size:12px;color:var(--muted);flex:1;">${LABELS[k]}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);">${v}</div>
+    </div>`).join('');
   document.getElementById('dashBillingSection').innerHTML = `
-    <div class="dash-section-title">สถานะวางบิล <button class="dash-refresh" onclick="loadAndRenderDashboard()">↻ รีเฟรช</button></div>
-    <div class="billing-overview">
-      <div class="billing-donut-wrap">
-        <svg width="110" height="110" viewBox="0 0 110 110">
-          ${total > 0 ? arcs : '<circle cx="55" cy="55" r="40" fill="#2e3241"/>'}
-          <circle cx="55" cy="55" r="${r - stroke}" fill="var(--card)"/>
-          <text x="55" y="51" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text)">${total}</text>
-          <text x="55" y="64" text-anchor="middle" font-size="9" fill="var(--muted)">ใบงาน</text>
-        </svg>
-      </div>
-      <div class="billing-legend">${legendHtml}</div>
+    <div style="font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+      <div style="width:3px;height:12px;background:var(--accent);border-radius:2px;"></div>สถานะวางบิล
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;">
+      <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;">
+        ${arcs}
+        <circle cx="55" cy="55" r="26" fill="var(--card)"/>
+        <text x="55" y="51" text-anchor="middle" font-size="16" font-weight="700" fill="var(--text)" font-family="Sarabun,sans-serif">${total}</text>
+        <text x="55" y="65" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Sarabun,sans-serif">ใบงาน</text>
+      </svg>
+      <div style="flex:1;">${legend}</div>
     </div>`;
 
-  // ===== พิมพ์ vs ไม่พิมพ์ =====
-  const printPct  = total > 0 ? Math.round(printed/total*100) : 0;
-  const unprintPct = 100 - printPct;
+  // ===== Print ratio =====
   document.getElementById('dashPrintSection').innerHTML = `
-    <div class="dash-section-title">พิมพ์แล้ว vs ยังไม่พิมพ์</div>
-    <div class="print-ratio-wrap">
-      <div class="ratio-bar-wrap">
-        <div class="ratio-label"><span>🖨 พิมพ์แล้ว</span><span>${printed} ใบ (${printPct}%)</span></div>
-        <div class="ratio-bar"><div class="ratio-fill printed" style="width:${printPct}%"></div></div>
+    <div style="font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+      <div style="width:3px;height:12px;background:var(--accent);border-radius:2px;"></div>สถานะการพิมพ์
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+          <span style="color:var(--text);">🖨 พิมพ์แล้ว</span>
+          <span style="color:#10b981;font-weight:700;">${printed} ใบ (${printPct}%)</span>
+        </div>
+        <div style="height:10px;background:var(--surface);border-radius:5px;overflow:hidden;">
+          <div style="height:100%;width:${printPct}%;background:linear-gradient(90deg,#10b981,#059669);border-radius:5px;transition:width .6s;"></div>
+        </div>
       </div>
-      <div class="ratio-bar-wrap">
-        <div class="ratio-label"><span>📄 ยังไม่พิมพ์</span><span>${unprinted} ใบ (${unprintPct}%)</span></div>
-        <div class="ratio-bar"><div class="ratio-fill unprinted" style="width:${unprintPct}%"></div></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+          <span style="color:var(--text);">📄 ยังไม่พิมพ์</span>
+          <span style="color:${unprinted>0?'#ef4444':'#10b981'};font-weight:700;">${unprinted} ใบ (${100-printPct}%)</span>
+        </div>
+        <div style="height:10px;background:var(--surface);border-radius:5px;overflow:hidden;">
+          <div style="height:100%;width:${100-printPct}%;background:${unprinted>0?'linear-gradient(90deg,#ef4444,#dc2626)':'#10b981'};border-radius:5px;transition:width .6s;"></div>
+        </div>
       </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--muted);">
-        ${unprinted > 0 ? `⚠️ ยังมี <b style="color:var(--warning)">${unprinted} ใบ</b> ที่ยังไม่ได้พิมพ์` : '✅ พิมพ์ครบทุกใบแล้ว'}
+      <div style="margin-top:4px;padding:10px 14px;background:${unprinted>0?'rgba(239,68,68,.08)':'rgba(16,185,129,.08)'};border-radius:8px;border:1px solid ${unprinted>0?'rgba(239,68,68,.2)':'rgba(16,185,129,.2)'};font-size:12px;color:${unprinted>0?'#f87171':'#34d399'};">
+        ${unprinted>0?`⚠️ มี <b>${unprinted} ใบ</b> ที่ยังไม่ได้พิมพ์`:'✅ พิมพ์ครบทุกใบแล้ว'}
       </div>
     </div>`;
 
-  // ===== กราฟงานรายเดือน =====
-  const monthMap = {};
-  const monthLabels = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
+  // ===== Monthly bar chart =====
+  const monthMap = {}, monthLabels = [];
+  for (let i=5;i>=0;i--) {
+    const d = new Date(); d.setMonth(d.getMonth()-i);
     const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     const label = String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(2);
-    monthMap[key] = 0;
-    monthLabels.push({ key, label });
+    monthMap[key] = 0; monthLabels.push({key,label});
   }
   records.forEach(r => {
-    const raw = r.createdAt || r.date || '';
-    const d = new Date(raw.includes('T') ? raw : raw.split('/').reverse().join('-'));
-    if (!isNaN(d)) {
-      const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      if (monthMap[key] !== undefined) monthMap[key]++;
-    }
+    const raw = r.createdAt||r.date||'';
+    const d = new Date(raw.includes('T')?raw:raw.split('/').reverse().join('-'));
+    if (!isNaN(d)) { const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); if(monthMap[k]!==undefined) monthMap[k]++; }
   });
-  const maxMonth = Math.max(...Object.values(monthMap), 1);
-  const barsHtml = monthLabels.map(({key, label}) => {
-    const v = monthMap[key] || 0;
-    const h = Math.round((v / maxMonth) * 80);
-    return `<div class="bar-col">
-      <div class="bar-val">${v||''}</div>
-      <div class="bar-fill" style="height:${h}px"></div>
-      <div class="bar-label">${label}</div>
+  const maxM = Math.max(...Object.values(monthMap),1);
+  const bars = monthLabels.map(({key,label}) => {
+    const v = monthMap[key]||0;
+    const h = Math.round((v/maxM)*70);
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
+      <div style="font-size:12px;font-weight:600;color:var(--text);min-height:18px;">${v||''}</div>
+      <div style="width:100%;height:${h}px;background:linear-gradient(180deg,#3b82f6,#6366f1);border-radius:4px 4px 0 0;min-height:3px;transition:height .5s;"></div>
+      <div style="font-size:11px;color:var(--muted);">${label}</div>
     </div>`;
   }).join('');
   document.getElementById('dashMonthSection').innerHTML = `
-    <div class="dash-section-title">งานรายเดือน (6 เดือนล่าสุด)</div>
-    <div class="bar-chart">${barsHtml}</div>`;
+    <div style="font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:6px;">
+      <div style="width:3px;height:12px;background:var(--accent);border-radius:2px;"></div>งานรายเดือน (6 เดือนล่าสุด)
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:110px;padding-bottom:0;">${bars}</div>`;
 
-  // ===== ลูกค้าที่มีงานมาก =====
+  // ===== Top customers =====
   const custMap = {};
-  records.forEach(r => {
-    const k = (r.customerName||'').trim() || 'ไม่ระบุ';
-    custMap[k] = (custMap[k]||0) + 1;
-  });
+  records.forEach(r => { const k=(r.customerName||'').trim()||'ไม่ระบุ'; custMap[k]=(custMap[k]||0)+1; });
   const topCust = Object.entries(custMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const maxCust = topCust.length > 0 ? topCust[0][1] : 1;
+  const maxC = topCust[0]?.[1]||1;
   document.getElementById('dashTopCust').innerHTML = `
-    <div class="dash-section-title">ลูกค้าที่มีงานมากที่สุด</div>
-    <div class="top-cust-list">
-      ${topCust.map(([name, cnt], i) => `
-        <div class="top-cust-row">
-          <div class="top-cust-rank">${i+1}</div>
-          <div class="top-cust-name">${name}</div>
-          <div class="top-cust-bar-wrap"><div class="top-cust-bar" style="width:${Math.round(cnt/maxCust*100)}%"></div></div>
-          <div class="top-cust-count">${cnt}</div>
+    <div style="font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+      <div style="width:3px;height:12px;background:var(--accent);border-radius:2px;"></div>ลูกค้าที่มีงานมากที่สุด
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${topCust.map(([name,cnt],i)=>`
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:20px;font-size:12px;font-weight:700;color:var(--muted);text-align:center;">${i+1}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;">${name}</div>
+            <div style="height:5px;background:var(--surface);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:${Math.round(cnt/maxC*100)}%;background:linear-gradient(90deg,#c9841a,#e8c068);border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#c9841a;width:28px;text-align:right;">${cnt}</div>
         </div>`).join('')}
     </div>`;
 
-  // ===== งานที่ยังไม่วางบิล =====
-  const unpaidList = records.filter(r => {
-    const b = billing[String(r.id)] || { status:'draft' };
-    return b.status !== 'complete';
-  }).slice(0, 8);
+  // ===== Unpaid list =====
+  const unpaidList = records.filter(r=>{ const b=billing[String(r.id)]||{status:'draft'}; return b.status!=='complete'; }).slice(0,8);
   document.getElementById('dashUnpaid').innerHTML = `
-    <div class="dash-section-title">งานที่ยังรอวางบิล (${pending} ใบ)</div>
-    <div class="unpaid-list">
-      ${unpaidList.length === 0
-        ? '<div class="hist-empty" style="padding:20px;"><div>✅ ทุกงานวางบิลครบแล้ว</div></div>'
-        : unpaidList.map(r => {
-            const b = billing[String(r.id)] || { status:'draft' };
-            const bst = BILL_STATUS[b.status] || BILL_STATUS.draft;
-            return `<div class="unpaid-row">
-              <div class="unpaid-doc">${r.docNumber||'—'}</div>
-              <div class="unpaid-name">${r.customerName||'—'} · ${r.jobName||'—'}</div>
-              <div class="unpaid-status"><span class="status-badge ${bst.cls}" style="font-size:10px;padding:2px 6px;">${bst.label}</span></div>
-            </div>`;
-          }).join('')
-      }
-    </div>`;
+    <div style="font-size:11px;color:var(--accent2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+      <div style="width:3px;height:12px;background:var(--accent);border-radius:2px;"></div>งานรอวางบิล (${pending} ใบ)
+    </div>
+    ${unpaidList.length===0
+      ?'<div style="text-align:center;padding:20px;color:#10b981;font-size:13px;">✅ ทุกงานวางบิลครบแล้ว</div>'
+      :`<div style="display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto;">
+        ${unpaidList.map(r=>{
+          const b=billing[String(r.id)]||{status:'draft'};
+          const bst=BILL_STATUS[b.status]||BILL_STATUS.draft;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:700;color:var(--accent2);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.docNumber||'—'}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.customerName||'—'}</div>
+              <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.jobName||'—'}</div>
+            </div>
+            <span class="status-badge ${bst.cls}" style="font-size:10px;padding:2px 7px;flex-shrink:0;">${bst.label}</span>
+          </div>`;
+        }).join('')}
+      </div>`}`;
 }
+
+
 
 
 function drawDonut(canvasId, segments, total) {
@@ -2806,6 +2857,44 @@ async function printById(id) {
 function openPreviewById_simple(id) {
   const r = (window._allRecords||[]).find(x => String(x.id) === String(id));
   if (r) openPreview(r);
+}
+
+function renderHistory() {
+  const q = (document.getElementById('histSearch')?.value || '').toLowerCase();
+  let records = (window._allRecords || JSON.parse(localStorage.getItem('tpe_deliveries_meta') || '[]'));
+  if (q) records = records.filter(r =>
+    (r.customerName||'').toLowerCase().includes(q) ||
+    (r.docNumber||'').includes(q) ||
+    (r.jobNumber||'').includes(q) ||
+    (r.jobName||'').toLowerCase().includes(q));
+  const list = document.getElementById('histList');
+  if (!records.length) {
+    list.innerHTML = `<div class="hist-empty"><div class="e-icon">📭</div><div>${q ? 'ไม่พบที่ตรงกัน' : 'ยังไม่มีเอกสาร'}</div></div>`;
+    return;
+  }
+  list.innerHTML = records.map(r => {
+    const ds = formatDate(r.date || r.createdAt || '');
+    const billing = getBillingData();
+    const b = billing[String(r.id)] || r.billing || { status:'draft', pct1:60 };
+    const bst = BILL_STATUS[b.status] || BILL_STATUS.draft;
+    const pctLabel = b.status==='bill1' ? ` (${b.pct1||60}%)` :
+                     b.status==='bill2' ? ` (${100-(b.pct1||60)}%)` : '';
+    return `<div class="hist-item">
+      <div class="hist-num">${r.docNumber||'—'}</div>
+      <div class="hist-info">
+        <div class="hist-title">${r.customerName||'—'} · ${r.jobName||'—'}</div>
+        <div class="hist-meta">Job ${r.jobNumber||'—'} | ${ds} | 📷 ${r.photoCount||0} รูป &nbsp;<span class="status-badge ${bst.cls}" style="font-size:10px;padding:2px 7px;">${bst.label}${pctLabel}</span></div>
+      </div>
+      <div class="hist-actions">
+        <button class="btn-sm btn-view"  onclick="openPreviewById('${r.id}')">👁 ดู</button>
+        <button class="btn-sm btn-print" onclick="printById('${r.id}')">🖨 พิมพ์</button>
+        <button class="btn-sm btn-edit"  onclick="editRecord('${r.id}')">✏️ แก้ไข</button>
+        <button class="btn-sm btn-copy"  onclick="copyRecord('${r.id}')">📋 คัดลอก</button>
+        <button class="btn-sm btn-del"   onclick="deleteRecord('${r.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+  updateBadge();
 }
 
 </script>
