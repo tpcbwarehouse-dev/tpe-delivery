@@ -1932,16 +1932,10 @@ function closePreview() { document.getElementById('modalOverlay').classList.add(
 function printDoc() {
   if (!currentRecord) return;
   const html = buildDocHTML(currentRecord);
-
-  // เปิด popup window สะอาด ไม่มี browser header/footer
   const recordId = currentRecord ? String(currentRecord.id) : '';
-  const win = window.open('', '_blank', 'width=900,height=1100');
-  if (!win) {
-    alert('กรุณาอนุญาต Popup สำหรับเว็บนี้\nSettings → Allow pop-ups for tpcbwarehouse-dev.github.io');
-    return;
-  }
-  win.name = recordId;
-  win.document.write(`<!DOCTYPE html>
+  const docStyles = getDocStyles();
+
+  const fullHtml = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
@@ -1950,19 +1944,11 @@ function printDoc() {
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #fff; font-family: 'Sarabun', sans-serif; }
-
-/* Print header/footer fixed */
 .print-header { position: fixed; top: 0; left: 0; right: 0; z-index: 999; }
 .print-footer  { position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; }
-
-/* เว้นที่ content */
-.doc-page { padding-top: 56px; padding-bottom: 44px; padding-left: 2mm; padding-right: 2mm; }
-
-/* ซ่อน screen header/footer */
+.doc-page { padding-top: 56px; padding-bottom: 44px; }
 .doc-header, .doc-footer, .doc-gold-rule { display: none !important; }
-
-${getDocStyles()}
-
+${docStyles}
 @media print {
   @page { size: A4; margin: 0; }
   body { margin: 0; }
@@ -1980,20 +1966,32 @@ ${getDocStyles()}
 </style>
 </head><body>
 ${html}
-<scr"+"ipt>
-  window.onload = function() {
-    setTimeout(function() { window.print(); }, 400);
-    window.onafterprint = function() {
-      try {
-        if (window.opener && window.opener.markAsPrinted) {
-          window.opener.markAsPrinted(window.name);
-        }
-      } catch(e) {}
-    };
+<script>
+window._rid = '${recordId}';
+window.onload = function() {
+  setTimeout(function() { window.print(); }, 500);
+  window.onafterprint = function() {
+    try {
+      if (window.opener && window.opener.markAsPrinted) {
+        window.opener.markAsPrinted(window._rid);
+      }
+    } catch(e) {}
   };
+};
 <\/script>
-</body></html>`);
-  win.document.close();
+</body></html>`;
+
+  // ใช้ Blob URL แทน document.write — script execute ได้แน่นอน
+  const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank', 'width=900,height=1100');
+  if (!win) {
+    URL.revokeObjectURL(url);
+    alert('กรุณาอนุญาต Popup สำหรับเว็บนี้\nคลิกที่ไอคอน 🚫 ใน address bar แล้วเลือก Allow');
+    return;
+  }
+  // cleanup URL หลัง 60s
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 function getDocStyles() {
